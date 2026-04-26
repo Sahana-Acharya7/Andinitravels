@@ -66,13 +66,20 @@ export default function Reports() {
     }
   }, [])
 
+  // Bookings that count toward revenue: confirmed status OR driver has completed the trip
+  // tripStatus === 'completed' is the reliable field — status strings vary ('Trip Completed', 'Trip Completed — Pending Reconciliation', etc.)
+  const isCountable = b =>
+    b.status === 'Booking Confirmed' ||
+    b.tripStatus === 'completed' ||
+    (b.status && b.status.startsWith('Trip Completed'))
+
   // 1. Calculate Overall Financials
   let totalRevenue = 0
   let totalExpenses = 0
   let totalProfit = 0
 
   bookings.forEach(b => {
-    if (b.status === 'Booking Confirmed') {
+    if (isCountable(b)) {
       const revenue = getFinalAmount(b)
       const expenses = getExpenses(b)
       totalRevenue += revenue
@@ -84,7 +91,7 @@ export default function Reports() {
   // 2. Revenue by Trip Type
   const tripTypeData = {}
   bookings.forEach(b => {
-    if (b.status === 'Booking Confirmed') {
+    if (isCountable(b)) {
       const type = b.tripType || 'Unknown'
       tripTypeData[type] = (tripTypeData[type] || 0) + getFinalAmount(b)
     }
@@ -94,7 +101,7 @@ export default function Reports() {
   // 3. Monthly Revenue (Simple Grouping)
   const monthlyDataMap = {}
   bookings.forEach(b => {
-    if (b.status === 'Booking Confirmed' && b.date) {
+    if (isCountable(b) && b.date) {
       // Assuming date is YYYY-MM-DD
       const month = b.date.substring(0, 7) // YYYY-MM
       const rev = getFinalAmount(b)
@@ -108,7 +115,7 @@ export default function Reports() {
   // 4. Top Customers
   const customerMap = {}
   bookings.forEach(b => {
-    if (b.status === 'Booking Confirmed' && b.customerName) {
+    if (isCountable(b) && b.customerName) {
       customerMap[b.customerName] = (customerMap[b.customerName] || 0) + getFinalAmount(b)
     }
   })
@@ -122,7 +129,7 @@ export default function Reports() {
     let trips = 0
     let earnings = 0
     bookings.forEach(b => {
-      if (b.status === 'Booking Confirmed' && b.driverId === d.id) {
+      if (isCountable(b) && b.driverId === d.id) {
         trips++
         earnings += (parseInt(b.driverAllowance) || 0)
       }
