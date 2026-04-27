@@ -6,27 +6,42 @@ export default function DriverBottomNav() {
   const location = useLocation()
   
   const navItems = [
-    { label: 'Trips', path: '/driver/trips', icon: <Car size={22} /> },
-    { label: 'Availability', path: '/driver/availability', icon: <Clock size={22} /> },
-    { label: 'Profile', path: '/driver/profile', icon: <User size={22} /> }
+    { label: 'Trips', path: '/driver/trips', icon: <Car size={24} /> },
+    { label: 'Schedule', path: '/driver/availability', icon: <Clock size={24} /> },
+    { label: 'Profile', path: '/driver/profile', icon: <User size={24} /> }
   ]
 
   return (
-    <div style={styles.navContainer}>
+    <nav style={styles.navContainer} className="glass">
       {navItems.map(item => {
         const active = location.pathname.includes(item.path)
         return (
-          <div 
+          <button 
             key={item.label}
-            style={{...styles.navItem, color: active ? '#2563eb' : '#64748b'}}
+            style={{
+              ...styles.navItem, 
+              color: active ? 'var(--primary)' : 'var(--text-tertiary)',
+            }}
             onClick={() => navigate(item.path)}
           >
-            {item.icon}
-            <span style={styles.navLabel}>{item.label}</span>
-          </div>
+            <div style={{
+              ...styles.iconWrapper,
+              background: active ? 'var(--primary-subtle)' : 'transparent',
+            }}>
+              {item.icon}
+            </div>
+            <span style={{
+              ...styles.navLabel,
+              fontWeight: active ? '700' : '500',
+              color: active ? 'var(--primary)' : 'var(--text-tertiary)'
+            }}>
+              {item.label}
+            </span>
+            {active && <div style={styles.activeDot} />}
+          </button>
         )
       })}
-    </div>
+    </nav>
   )
 }
 
@@ -36,25 +51,48 @@ const styles = {
     bottom: 0,
     left: 0,
     right: 0,
-    height: '65px',
-    background: '#fff',
+    height: '76px',
+    background: 'rgba(255, 255, 255, 0.9)',
     display: 'flex',
     justifyContent: 'space-around',
     alignItems: 'center',
-    boxShadow: '0 -2px 10px rgba(0,0,0,0.05)',
-    zIndex: 100,
-    fontFamily: 'sans-serif'
+    padding: '0 12px 12px 12px',
+    boxShadow: '0 -4px 16px rgba(0,0,0,0.04)',
+    zIndex: 1000,
+    borderTop: '1px solid var(--border-light)',
   },
   navItem: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '4px',
-    cursor: 'pointer',
-    width: '33%',
+    justifyContent: 'center',
+    gap: '2px',
+    background: 'none',
+    border: 'none',
+    width: '30%',
+    padding: '8px 0',
+    position: 'relative',
+    transition: 'all 0.2s ease',
+  },
+  iconWrapper: {
+    padding: '6px 16px',
+    borderRadius: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.2s ease',
   },
   navLabel: {
-    fontSize: '0.75rem',
-    fontWeight: '600'
+    fontSize: '0.6875rem',
+    marginTop: '2px',
+  },
+  activeDot: {
+    position: 'absolute',
+    bottom: '-2px',
+    width: '4px',
+    height: '4px',
+    borderRadius: '50%',
+    background: 'var(--primary)',
   }
 }
+

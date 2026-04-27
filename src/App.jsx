@@ -1,12 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import './App.css'
 import Login from './pages/Login'
 import DriverDashboard from './pages/driver/DriverDashboard'
 import TripDetail from './pages/driver/TripDetail'
 import Availability from './pages/driver/Availability'
 import DriverProfile from './pages/driver/DriverProfile'
 import Dashboard from './pages/admin/Dashboard'
+import AdminLayout from './components/AdminLayout'
 import CreateBooking from './pages/admin/CreateBooking'
 import BookingDetail from './pages/admin/BookingDetail'
 import Drivers from './pages/admin/Drivers'
@@ -37,61 +39,20 @@ function App() {
 
           {/* Admin Routes */}
           <Route 
-            path="/dashboard" 
             element={
               <ProtectedRoute allowedRoles={['admin']}>
-                <Dashboard />
+                <AdminLayout />
               </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/" 
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <Dashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/create" 
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <CreateBooking />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/booking/:id" 
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <BookingDetail />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/drivers" 
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <Drivers />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/customers" 
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <Customers />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/reports" 
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <Reports />
-              </ProtectedRoute>
-            } 
-          />
+            }
+          >
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/create" element={<CreateBooking />} />
+            <Route path="/booking/:id" element={<BookingDetail />} />
+            <Route path="/drivers" element={<Drivers />} />
+            <Route path="/customers" element={<Customers />} />
+            <Route path="/reports" element={<Reports />} />
+          </Route>
 
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

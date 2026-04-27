@@ -8,7 +8,7 @@ import {
   serverTimestamp,
   updateDoc,
 } from 'firebase/firestore'
-import { ArrowLeft, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Activity, Pencil, Plus, Trash2, User, X } from 'lucide-react'
 import { db } from '../../firebase'
 import { useNavigate } from 'react-router-dom'
 
@@ -114,328 +114,249 @@ export default function Customers() {
   }
 
   return (
-   <div style={styles.page}>
-  <div style={styles.header}>
-    <div style={styles.headerCopy}>
-      <h2 style={styles.title}>Passengers</h2>
-      <p style={styles.subtitle}>Store passengers once and reuse them for bookings.</p>
-    </div>
-    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-      <button style={styles.primaryButton} onClick={startCreate}>
-        <Plus size={16} /> New Passenger
-      </button>
-      <button style={styles.back} onClick={() => navigate('/')}>
-        <ArrowLeft size={18} /> Back
-      </button>
-    </div>
-  </div>
-
-  <div style={styles.toolbar}>
-    <input
-      style={styles.search}
-      placeholder="Search by passenger name, mobile, or email"
-      value={search}
-      onChange={event => setSearch(event.target.value)}
-    />
-    <span style={styles.count}>{filteredCustomers.length} passengers</span>
-  </div>
-
-  {showForm && (
-    <form style={styles.formCard} onSubmit={handleSubmit}>
-      <div style={styles.formHeader}>
+    <>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
         <div>
-          <h3 style={styles.formTitle}>{editingId ? 'Edit Passenger' : 'New Passenger'}</h3>
-          <p style={styles.formSubtitle}>These details will be available in the booking dropdown.</p>
+          <h1 className="heading-2" style={{ margin: 0 }}>Passengers</h1>
+          <p className="text-label" style={{ textTransform: 'none', marginTop: '4px' }}>Store and reuse passenger details for bookings.</p>
         </div>
-        <button type="button" style={styles.iconButton} onClick={resetForm}>
-          <X size={18} />
+        <button className="btn-primary" onClick={startCreate}>
+          <Plus size={18} /> New Passenger
         </button>
+      </header>
+
+      <div style={styles.toolbar}>
+        <div className="search-container">
+          <Activity className="icon" size={18} />
+          <input
+            placeholder="Search by name, mobile, or email..."
+            value={search}
+            onChange={event => setSearch(event.target.value)}
+          />
+        </div>
+        <span className="text-label" style={{ fontWeight: 600 }}>{filteredCustomers.length} Total Passengers</span>
       </div>
 
-      <div style={styles.grid}>
-        <Field label="Name" required>
-          <input
-            style={styles.input}
-            value={form.name}
-            onChange={event => set('name', event.target.value)}
-            required
-          />
-            </Field>
-            <Field label="Mobile" required>
+      {showForm && (
+        <form className="card-premium" style={styles.formCard} onSubmit={handleSubmit}>
+          <div style={styles.formHeader}>
+            <div>
+              <h3 className="heading-3">{editingId ? 'Edit Passenger' : 'New Passenger'}</h3>
+              <p className="text-label" style={{ textTransform: 'none', marginTop: '2px' }}>Fill in the details below to save this passenger.</p>
+            </div>
+            <button type="button" className="btn btn-ghost" style={{ padding: '8px' }} onClick={resetForm}>
+              <X size={20} />
+            </button>
+          </div>
+
+          <div style={styles.grid}>
+            <div className="input-group">
+              <label className="input-label">Full Name <span style={{ color: 'var(--danger)' }}>*</span></label>
               <input
-                style={styles.input}
+                style={{ width: '100%' }}
+                value={form.name}
+                onChange={event => set('name', event.target.value)}
+                placeholder="e.g. John Doe"
+                required
+              />
+            </div>
+            <div className="input-group">
+              <label className="input-label">Mobile Number <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <input
+                style={{ width: '100%' }}
                 type="tel"
                 value={form.mobile}
                 onChange={event => set('mobile', event.target.value)}
+                placeholder="e.g. +91 98765 43210"
                 required
               />
-            </Field>
-            <Field label="Email">
+            </div>
+            <div className="input-group">
+              <label className="input-label">Email Address</label>
               <input
-                style={styles.input}
+                style={{ width: '100%' }}
                 type="email"
                 value={form.email}
                 onChange={event => set('email', event.target.value)}
+                placeholder="e.g. john@example.com"
               />
-            </Field>
-            <Field label="Birthday">
+            </div>
+            <div className="input-group">
+              <label className="input-label">Birthday</label>
               <input
-                style={styles.input}
+                style={{ width: '100%' }}
                 type="date"
                 value={form.birthday}
                 onChange={event => set('birthday', event.target.value)}
               />
-            </Field>
+            </div>
           </div>
 
-          <Field label="Address">
+          <div className="input-group">
+            <label className="input-label">Address</label>
             <textarea
-              style={{ ...styles.input, minHeight: '96px', resize: 'vertical' }}
+              style={{ width: '100%', minHeight: '80px', resize: 'vertical' }}
               value={form.address}
               onChange={event => set('address', event.target.value)}
+              placeholder="Full residence or office address..."
             />
-          </Field>
+          </div>
 
           <div style={styles.formActions}>
-            <button type="button" style={styles.secondaryButton} onClick={resetForm}>
+            <button type="button" className="btn btn-outline" onClick={resetForm}>
               Cancel
             </button>
-            <button style={styles.primaryButton} disabled={loading}>
-              {loading ? 'Saving...' : editingId ? 'Save Passenger' : 'Create Passenger'}
+            <button className="btn btn-primary" disabled={loading}>
+              {loading ? 'Saving...' : editingId ? 'Update Passenger' : 'Save Passenger'}
             </button>
           </div>
         </form>
       )}
 
       <div style={styles.list}>
-        {filteredCustomers.length === 0 && (
-          <div style={styles.empty}>
-            <div style={styles.emptyTitle}>No passengers yet</div>
-            <div style={styles.emptySub}>Add a passenger to reuse their details in new bookings.</div>
-          </div>
-        )}
-
-        {filteredCustomers.map(customer => (
-          <div key={customer.id} style={styles.card}>
-            <div style={styles.avatar}>{customer.name?.[0]?.toUpperCase() || '?'}</div>
-            <div style={styles.cardBody}>
-              <div style={styles.cardTop}>
-                <div style={styles.name}>{customer.name}</div>
-                <div style={styles.cardActions}>
-                  <button style={styles.iconButtonBlue} onClick={() => startEdit(customer)}>
-                    <Pencil size={16} />
-                  </button>
-                  <button style={styles.iconButtonRed} onClick={() => handleDelete(customer)}>
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-              <div style={styles.sub}>{customer.mobile || 'No mobile added'}</div>
-              <div style={styles.sub}>{customer.email || 'No email added'}</div>
-              <div style={styles.sub}>{customer.address || 'No address added'}</div>
-              <div style={styles.sub}>Birthday: {customer.birthday || 'Not set'}</div>
+        {filteredCustomers.length === 0 ? (
+          <div className="card" style={styles.empty}>
+            <div style={styles.emptyIcon}>
+              <User size={48} color="var(--text-tertiary)" />
             </div>
+            <h3 className="heading-3">No passengers found</h3>
+            <p className="text-label" style={{ textTransform: 'none', marginTop: '4px' }}>Add your first passenger to start building your database.</p>
+            {!showForm && (
+              <button className="btn btn-primary" style={{ marginTop: '1.5rem' }} onClick={startCreate}>
+                Add Passenger
+              </button>
+            )}
           </div>
-        ))}
+        ) : (
+          filteredCustomers.map(customer => (
+            <div key={customer.id} className="card card-hover" style={styles.customerCard}>
+              <div style={styles.avatar}>{customer.name?.[0]?.toUpperCase() || '?'}</div>
+              <div style={styles.cardBody}>
+                <div style={styles.cardHeaderRow}>
+                  <div className="text-value" style={{ fontSize: '1.05rem' }}>{customer.name}</div>
+                  <div style={styles.cardActions}>
+                    <button className="btn btn-secondary" style={{ padding: '6px' }} onClick={() => startEdit(customer)}>
+                      <Pencil size={14} />
+                    </button>
+                    <button className="btn btn-danger" style={{ padding: '6px' }} onClick={() => handleDelete(customer)}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+                
+                <div style={styles.metaRow}>
+                  {customer.mobile && (
+                    <div style={styles.metaItem}>
+                      <Activity size={14} color="var(--text-tertiary)" />
+                      <span className="text-label" style={{ textTransform: 'none', fontSize: '0.8125rem' }}>{customer.mobile}</span>
+                    </div>
+                  )}
+                  {customer.email && (
+                    <div style={styles.metaItem}>
+                      <Activity size={14} color="var(--text-tertiary)" />
+                      <span className="text-label" style={{ textTransform: 'none', fontSize: '0.8125rem' }}>{customer.email}</span>
+                    </div>
+                  )}
+                  {customer.birthday && (
+                    <div style={styles.metaItem}>
+                      <Plus size={14} color="var(--text-tertiary)" />
+                      <span className="text-label" style={{ textTransform: 'none', fontSize: '0.8125rem' }}>{customer.birthday}</span>
+                    </div>
+                  )}
+                </div>
+                
+                {customer.address && (
+                  <p className="text-label" style={{ textTransform: 'none', fontSize: '0.8125rem', marginTop: '8px', lineHeight: 1.4 }}>
+                    {customer.address}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))
+        )}
       </div>
-    </div>
-  )
-}
-
-function Field({ label, required, children }) {
-  return (
-    <div style={{ marginBottom: '1rem' }}>
-      <label style={styles.label}>
-        {label}
-        {required ? <span style={styles.required}> *</span> : null}
-      </label>
-      {children}
-    </div>
+    </>
   )
 }
 
 const styles = {
-  page: { maxWidth: '860px', margin: '0 auto', padding: '1.5rem' },
- header: {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'flex-start',
-  marginBottom: '1.5rem',
-  flexWrap: 'wrap',
-},
-  headerCopy: { flex: 1, minWidth: '220px' },
-  back: {
-   display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    background: '#2563eb',
-    border: '1.5px solid #e0e0e0',
-    borderRadius: '10px',
-    padding: '0.5rem 1rem',
-    fontSize: '0.875rem',
-    fontWeight: '600',
-    color: '#f3f5f8',
-    cursor: 'pointer',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-  },
-  title: { fontSize: '1.45rem', fontWeight: '700', marginBottom: '0.25rem' },
-  subtitle: { color: '#6b7280', fontSize: '0.92rem' },
   toolbar: {
     display: 'flex',
-    gap: '0.75rem',
+    gap: '1rem',
     alignItems: 'center',
-    marginBottom: '1rem',
+    marginBottom: '1.5rem',
     flexWrap: 'wrap',
   },
-  search: {
-    flex: 1,
-    minWidth: '240px',
-    padding: '0.75rem 0.95rem',
-    border: '1.5px solid #dbe2f1',
-    borderRadius: '10px',
-    fontSize: '0.95rem',
-    background: '#fff',
-  },
-  count: { color: '#6b7280', fontSize: '0.9rem', fontWeight: '600' },
   formCard: {
-    background: '#fff',
-    borderRadius: '16px',
-    padding: '1.5rem',
-    marginBottom: '1.25rem',
-    boxShadow: '0 8px 30px rgba(15, 23, 42, 0.08)',
+    padding: '2rem',
+    marginBottom: '1.5rem',
   },
   formHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: '1rem',
-    marginBottom: '1rem',
+    marginBottom: '1.5rem',
+    paddingBottom: '1.25rem',
+    borderBottom: '1px solid var(--border-light)',
   },
-  formTitle: { fontWeight: '700', fontSize: '1rem', marginBottom: '0.25rem' },
-  formSubtitle: { color: '#6b7280', fontSize: '0.88rem' },
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
     gap: '1rem',
-  },
-  label: {
-    display: 'block',
-    marginBottom: '0.4rem',
-    fontSize: '0.82rem',
-    fontWeight: '600',
-    color: '#6b7280',
-  },
-  required: { color: '#dc2626' },
-  input: {
-    width: '100%',
-    padding: '0.72rem 0.92rem',
-    border: '1.5px solid #dbe2f1',
-    borderRadius: '10px',
-    fontSize: '0.95rem',
-    outline: 'none',
-    background: '#fff',
   },
   formActions: {
     display: 'flex',
     justifyContent: 'flex-end',
-    gap: '0.75rem',
+    gap: '12px',
     marginTop: '0.5rem',
-    flexWrap: 'wrap',
   },
-  primaryButton: {
-    background: '#2563eb',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '10px',
-    padding: '0.7rem 1.1rem',
-    fontWeight: '600',
-    cursor: 'pointer',
+  list: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
+  customerCard: {
+    padding: '1.25rem',
     display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  secondaryButton: {
-    background: '#fff',
-    color: '#475569',
-    border: '1.5px solid #dbe2f1',
-    borderRadius: '10px',
-    padding: '0.7rem 1rem',
-    fontWeight: '600',
-    cursor: 'pointer',
-  },
-  list: { display: 'flex', flexDirection: 'column', gap: '0.8rem' },
-  card: {
-    background: '#fff',
-    borderRadius: '16px',
-    padding: '1.2rem',
-    display: 'flex',
-    gap: '1rem',
-    boxShadow: '0 8px 30px rgba(15, 23, 42, 0.06)',
+    gap: '1.25rem',
+    alignItems: 'flex-start',
   },
   avatar: {
     width: '48px',
     height: '48px',
-    borderRadius: '50%',
-    background: '#dbeafe',
-    color: '#1d4ed8',
+    borderRadius: '14px',
+    background: 'var(--primary-subtle)',
+    color: 'var(--primary)',
     fontWeight: '700',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    fontSize: '1.1rem',
+    fontSize: '1.125rem',
   },
   cardBody: { flex: 1, minWidth: 0 },
-  cardTop: {
+  cardHeaderRow: {
     display: 'flex',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '0.5rem',
     gap: '1rem',
-    marginBottom: '0.4rem',
-    alignItems: 'flex-start',
-    flexWrap: 'wrap',
   },
-  cardActions: { display: 'flex', gap: '0.5rem' },
-  name: { fontWeight: '700', fontSize: '1rem', color: '#0f172a' },
-  sub: { color: '#64748b', fontSize: '0.9rem', marginTop: '0.2rem', lineHeight: 1.5 },
+  cardActions: { display: 'flex', gap: '8px' },
+  metaRow: { display: 'flex', gap: '1.25rem', flexWrap: 'wrap' },
+  metaItem: { display: 'flex', alignItems: 'center', gap: '6px' },
   empty: {
-    background: '#fff',
-    borderRadius: '16px',
-    padding: '3rem 1.5rem',
     textAlign: 'center',
-    boxShadow: '0 8px 30px rgba(15, 23, 42, 0.06)',
+    padding: '4rem 2rem',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
   },
-  emptyTitle: { fontWeight: '700', marginBottom: '0.4rem', color: '#334155' },
-  emptySub: { color: '#94a3b8' },
-  iconButton: {
-    background: '#f8fafc',
-    border: '1px solid #e2e8f0',
-    borderRadius: '10px',
-    padding: '0.5rem',
-    cursor: 'pointer',
+  emptyIcon: {
+    width: '80px',
+    height: '80px',
+    background: 'var(--bg-page)',
+    borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iconButtonBlue: {
-    background: '#dbeafe',
-    border: 'none',
-    borderRadius: '10px',
-    padding: '0.5rem',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: '#2563eb',
-  },
-  iconButtonRed: {
-    background: '#fee2e2',
-    border: 'none',
-    borderRadius: '10px',
-    padding: '0.5rem',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: '#dc2626',
-  },
+    marginBottom: '1.5rem',
+  }
 }

@@ -2,22 +2,20 @@ import { useEffect, useState } from 'react'
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
 import {
+  Activity,
   AlertCircle,
   Calendar,
   Car,
   CheckCircle,
   ChevronRight,
   Clock,
-  Flag,
-  Loader,
   LogOut,
-  MapPin,
   Plus,
-  Play, // ADDED
+  Play,
   User,
   Users,
   TrendingUp,
-  ThumbsUp, // ADDED
+  ThumbsUp,
 } from 'lucide-react'
 import { db, auth } from '../../firebase'
 import { useNavigate } from 'react-router-dom'
@@ -38,6 +36,7 @@ const TRIP_STATUS = {
 export default function Dashboard() {
   const [bookings, setBookings] = useState([])
   const [filter, setFilter] = useState('All')
+  const [search, setSearch] = useState('')
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -48,332 +47,195 @@ export default function Dashboard() {
     })
   }, [])
 
-  const filteredBookings =
-    filter === 'All' ? bookings : bookings.filter(booking => {
-      if (filter === 'Unassigned') {
-        return booking.assignedDriverId === null || booking.assignedDriverId === undefined
-      }
-      // ADDED — tripStatus-based filters
-      if (filter === 'Driver Accepted') return booking.tripStatus === 'accepted'
-      if (filter === 'Trips Started') return booking.tripStatus === 'started'
-      if (filter === 'Rejected') return booking.tripStatus === 'rejected'
-      return booking.status === filter
-    })
+  const filteredBookings = bookings.filter(booking => {
+    // Status filter
+    const matchesFilter = filter === 'All' ? true :
+      filter === 'Unassigned' ? (booking.assignedDriverId === null || booking.assignedDriverId === undefined) :
+      filter === 'Accepted' ? booking.tripStatus === 'accepted' :
+      filter === 'Started' ? booking.tripStatus === 'started' :
+      filter === 'Rejected' ? booking.tripStatus === 'rejected' :
+      booking.status === filter;
+
+    // Search filter
+    const matchesSearch = search === '' ? true :
+      booking.customerName?.toLowerCase().includes(search.toLowerCase()) ||
+      booking.pickupPoint?.toLowerCase().includes(search.toLowerCase()) ||
+      booking.dropPoint?.toLowerCase().includes(search.toLowerCase()) ||
+      booking.driverName?.toLowerCase().includes(search.toLowerCase());
+
+    return matchesFilter && matchesSearch;
+  })
 
   const counts = {
     All: bookings.length,
     'Booking Pending': bookings.filter(booking => booking.status === 'Booking Pending').length,
     'Booking Confirmed': bookings.filter(booking => booking.status === 'Booking Confirmed').length,
-    // ADDED
-    'Driver Accepted': bookings.filter(booking => booking.tripStatus === 'accepted').length,
-    'Trips Started': bookings.filter(booking => booking.tripStatus === 'started').length,
+    'Accepted': bookings.filter(booking => booking.tripStatus === 'accepted').length,
+    'Started': bookings.filter(booking => booking.tripStatus === 'started').length,
   }
 
   return (
     <>
-      <style>{`
-        @media (max-width: 600px) {
-          .stat-grid-responsive {
-            display: flex !important;
-            overflow-x: auto !important;
-            padding-bottom: 0.5rem !important;
-            gap: 0.5rem !important;
-          }
-          .stat-card-responsive {
-            min-width: 110px !important;
-            flex-shrink: 0 !important;
-          }
-          .header-buttons-responsive {
-            justify-content: flex-start !important;
-            width: 100% !important;
-          }
-        }
-      `}</style>
-
-      <div style={styles.page}>
-        <div style={styles.header}>
-        <div style={styles.brand}>
-          <div style={styles.brandIcon}>
-            <Car size={20} color="#2563eb" />
-          </div>
-          <div>
-            <div style={styles.logo}>Andini Travels</div>
-            <div style={styles.logoSub}>Admin Dashboard</div>
-          </div>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+        <div>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Dashboard</h1>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', marginTop: '4px' }}>Overview of all trips and bookings</p>
         </div>
-
-        <div style={styles.headerButtons} className="header-buttons-responsive">
-          <button style={styles.primaryButton} onClick={() => navigate('/create')}>
-            <Plus size={16} /> New Booking
-          </button>
-          <button style={styles.ghostButton} onClick={() => navigate('/customers')}>
-            <User size={16} /> Passengers
-          </button>
-          <button style={styles.ghostButton} onClick={() => navigate('/drivers')}>
-            <Users size={16} /> Drivers
-          </button>
-          <button style={styles.ghostButton} onClick={() => navigate('/reports')}>
-            <TrendingUp size={16} /> Reports
-          </button>
-          <button style={styles.ghostButton} onClick={() => signOut(auth)}>
-            <LogOut size={16} />
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <div className="filter-pills" style={{ padding: '4px 12px', display: 'flex', alignItems: 'center' }}>
+            <Calendar size={16} color="var(--text-secondary)" style={{ marginRight: '8px' }} />
+            <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>27 Apr 2026</span>
+            <ChevronRight size={16} color="var(--text-secondary)" style={{ marginLeft: '8px', transform: 'rotate(90deg)' }} />
+          </div>
+          <button className="card" style={{ padding: '8px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => window.location.reload()}>
+            <Activity size={18} />
           </button>
         </div>
-      </div>
+      </header>
 
-      <div style={styles.statGrid} className="stat-grid-responsive">
+      {/* KPI Cards */}
+      <div className="kpi-grid">
         {[
-          { label: 'All Trips', key: 'All', icon: <Calendar size={18} color="#2563eb" />, color: '#2563eb' },
-          { label: 'Booking Pending', key: 'Booking Pending', icon: <AlertCircle size={18} color="#f59e0b" />, color: '#f59e0b' },
-          { label: 'Booking Confirmed', key: 'Booking Confirmed', icon: <CheckCircle size={18} color="#16a34a" />, color: '#16a34a' },
-          { label: 'Driver Accepted', key: 'Driver Accepted', icon: <ThumbsUp size={18} color="#8b5cf6" />, color: '#8b5cf6' },
-          { label: 'Trips Started', key: 'Trips Started', icon: <Play size={18} color="#ea580c" />, color: '#ea580c' },
-        ].map(({ label, key, icon, color }) => (
+          { label: 'All Trips', sub: 'Total bookings', key: 'All', icon: <Calendar size={24} />, color: 'var(--primary)', bg: 'var(--primary-subtle)' },
+          { label: 'Pending', sub: 'Awaiting action', key: 'Booking Pending', icon: <Clock size={24} />, color: 'var(--warning)', bg: 'var(--warning-subtle)' },
+          { label: 'Confirmed', sub: 'Booking confirmed', key: 'Booking Confirmed', icon: <CheckCircle size={24} />, color: 'var(--success)', bg: 'var(--success-subtle)' },
+          { label: 'Accepted', sub: 'Driver accepted', key: 'Accepted', icon: <ThumbsUp size={24} />, color: '#8b5cf6', bg: '#f5f3ff' },
+          { label: 'Started', sub: 'Trips in progress', key: 'Started', icon: <Play size={24} />, color: '#ea580c', bg: '#fff7ed' },
+        ].map(({ label, sub, key, icon, color, bg }) => (
           <div
             key={key}
-            className="stat-card-responsive"
-            style={{
-              ...styles.statCard,
-              borderBottom: filter === key ? `3px solid ${color}` : '3px solid transparent',
-            }}
+            className={`kpi-card ${filter === key ? 'active' : ''}`}
             onClick={() => setFilter(key)}
           >
-            <div style={styles.statIcon}>{icon}</div>
-            <div style={{ ...styles.statNum, color }}>{counts[key]}</div>
-            <div style={styles.statLabel}>{label}</div>
-          </div>
-        ))}
-      </div>
-
-      <div style={styles.filterRow}>
-        {/* ADDED — Driver Accepted & Trips Started pills */}
-        {['All', 'Booking Pending', 'Booking Confirmed', 'Driver Accepted', 'Trips Started', 'Unassigned', 'Rejected'].map(status => (
-          <button
-            key={status}
-            style={{
-              ...styles.pill,
-              background: filter === status ? '#2563eb' : '#fff',
-              color: filter === status ? '#fff' : '#555',
-            }}
-            onClick={() => setFilter(status)}
-          >
-            {status}
-          </button>
-        ))}
-        <span style={styles.count}>{filteredBookings.length} trips</span>
-      </div>
-
-      <div style={styles.list}>
-        {filteredBookings.length === 0 && (
-          <div style={styles.empty}>
-            <Car size={48} color="#e0e0e0" style={{ marginBottom: '1rem' }} />
-            <div style={{ fontWeight: '600', color: '#555' }}>No bookings found</div>
-            <div style={{ color: '#aaa', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-              Create a new booking to get started
+            <div className="kpi-icon-container" style={{ background: bg, color: color }}>
+              {icon}
+            </div>
+            <div>
+              <div className="kpi-value">{counts[key] || 0}</div>
+              <div className="kpi-label">{label}</div>
+              <div className="kpi-sub">{sub}</div>
             </div>
           </div>
-        )}
+        ))}
+      </div>
 
-        {filteredBookings.map(booking => {
-          const statusConfig = STATUS[booking.status] || { bg: '#eee', color: '#555', icon: null }
-
-          return (
-            <div
-              key={booking.id}
-              style={styles.card}
-              onClick={() => navigate(`/booking/${booking.id}`)}
+      {/* Filters & Search */}
+      <div className="filter-section">
+        <div className="filter-pills">
+          {['All', 'Unassigned', 'Pending', 'Confirmed', 'Accepted', 'Rejected'].map(status => (
+            <button
+              key={status}
+              className={`filter-pill ${filter === status ? 'active' : ''}`}
+              onClick={() => setFilter(status)}
             >
-              <div style={styles.cardAvatar}>
-                {booking.customerName?.[0]?.toUpperCase() || '?'}
-              </div>
-              <div style={styles.cardBody}>
-                <div style={styles.cardTop}>
-                  <div style={styles.cardName}>{booking.customerName}</div>
-                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                    {STATUS[booking.status] && (
-                      <span
-                        style={{
-                          ...styles.badge,
-                          background: statusConfig.bg,
-                          color: statusConfig.color,
-                        }}
-                      >
-                        {booking.status}
-                      </span>
-                    )}
-                    {/* ADDED — show tripStatus badge */}
-                    {booking.tripStatus && TRIP_STATUS[booking.tripStatus] && (
-                      <span
-                        style={{
-                          ...styles.badge,
-                          background: TRIP_STATUS[booking.tripStatus].bg,
-                          color: TRIP_STATUS[booking.tripStatus].color,
-                        }}
-                      >
-                        {TRIP_STATUS[booking.tripStatus].label}
-                      </span>
-                    )}
+              {status}
+            </button>
+          ))}
+        </div>
+        <div className="search-container">
+          <Users className="icon" size={18} />
+          <input
+            placeholder="Search by passenger, location, driver..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>{filter} Trips</h3>
+        <span style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)', fontWeight: 600 }}>{filteredBookings.length} trips found</span>
+      </div>
+
+      <div className="trip-list">
+        {filteredBookings.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'white', borderRadius: '20px', border: '1px solid var(--border-light)' }}>
+            <Car size={48} color="var(--border)" style={{ marginBottom: '1rem' }} />
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 700 }}>No trips found</h3>
+            <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>Try adjusting your filters or search query.</p>
+          </div>
+        ) : (
+          filteredBookings.map(booking => {
+            const statusConfig = STATUS[booking.status] || { bg: '#eee', color: '#555' }
+            const tripStatusConfig = TRIP_STATUS[booking.tripStatus]
+
+            return (
+              <div
+                key={booking.id}
+                className="trip-card"
+                onClick={() => navigate(`/booking/${booking.id}`)}
+              >
+                <div className="trip-avatar">
+                  {booking.customerName?.[0]?.toUpperCase() || '?'}
+                </div>
+                
+                <div className="trip-main">
+                  <div className="trip-header">
+                    <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>{booking.customerName}</div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      {STATUS[booking.status] && (
+                        <span className="badge" style={{ background: statusConfig.bg, color: statusConfig.color }}>
+                          {booking.status}
+                        </span>
+                      )}
+                      {tripStatusConfig && (
+                        <span className="badge" style={{ background: 'var(--success-subtle)', color: 'var(--success)' }}>
+                          {tripStatusConfig.label}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="trip-route">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.875rem', fontWeight: 500 }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary)' }}></div>
+                      <span style={{ color: 'var(--text-secondary)' }}>{booking.pickupPoint}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.875rem', fontWeight: 500 }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success)' }}></div>
+                      <span style={{ color: 'var(--text-secondary)' }}>{booking.dropPoint}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>
+                      <Calendar size={14} />
+                      <span>{booking.date}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>
+                      <Clock size={14} />
+                      <span>{booking.pickupTime || '--:--'}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>
+                      <User size={14} />
+                      <span>{booking.driverName || 'Unassigned'}</span>
+                    </div>
                   </div>
                 </div>
-                <div style={styles.cardRoute}>
-                  <MapPin size={13} color="#2563eb" />
-                  <span>{booking.pickupPoint}</span>
-                  <span style={{ color: '#cbd5e1' }}>to</span>
-                  <Flag size={13} color="#16a34a" />
-                  <span>{booking.dropPoint}</span>
-                </div>
-                <div style={styles.cardMeta}>
-                  <span style={styles.metaItem}>
-                    <Calendar size={13} /> {booking.date || 'No date'}
-                  </span>
-                  <span style={styles.metaItem}>
-                    <Clock size={13} /> {booking.pickupTime || 'No time'}
-                  </span>
-                  <span style={styles.metaItem}>
-                    <User size={13} /> {booking.driverName || 'Unassigned'}
-                  </span>
-                  <span style={{ ...styles.metaItem, fontWeight: '700', color: '#16a34a' }}>
-                    Rs {booking.tripType === 'Round Trip'
+
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#16a34a' }}>
+                    ₹{booking.tripType === 'Round Trip'
                       ? ((parseInt(booking.totalKilometerAmount) || 0) + (parseInt(booking.driverAllowance) || 0) + (parseInt(booking.toll) || 0) + (parseInt(booking.stateBorderTax) || 0) + (parseInt(booking.parking) || 0))
                       : ((parseInt(booking.carFare) || 0) + (parseInt(booking.parking) || 0))}
-                  </span>
+                  </div>
+                  <ChevronRight size={20} color="var(--border)" />
                 </div>
               </div>
-              <ChevronRight size={20} color="#cbd5e1" />
-            </div>
-          )
-        })}
+            )
+          })
+        )}
       </div>
+
+      {/* Pagination */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '32px' }}>
+        <span style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>Showing 1 to {filteredBookings.length} of {bookings.length} trips</span>
+        <div className="filter-pills" style={{ padding: '4px', display: 'flex', gap: '4px' }}>
+          <button className="filter-pill" style={{ padding: '4px 8px' }}><ChevronRight size={16} style={{ transform: 'rotate(180deg)' }} /></button>
+          <button className="filter-pill active" style={{ padding: '4px 12px' }}>1</button>
+          <button className="filter-pill" style={{ padding: '4px 8px' }}><ChevronRight size={16} /></button>
+        </div>
       </div>
     </>
   )
-}
-
-const styles = {
-  page: { maxWidth: '980px', margin: '0 auto', padding: '1.25rem' },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    background: '#fff',
-    borderRadius: '16px',
-    padding: '1rem 1.5rem',
-    marginBottom: '1.25rem',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-    flexWrap: 'wrap',
-    gap: '1rem',
-  },
-  brand: { display: 'flex', alignItems: 'center', gap: '0.75rem' },
-  brandIcon: {
-    width: '40px',
-    height: '40px',
-    background: '#e8f0fe',
-    borderRadius: '10px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logo: { fontSize: '1.2rem', fontWeight: '700', color: '#1a1a2e' },
-  logoSub: { fontSize: '0.75rem', color: '#94a3b8' },
-  headerButtons: { display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' },
-  primaryButton: {
-    background: '#2563eb',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '10px',
-    padding: '0.6rem 1.1rem',
-    fontWeight: '600',
-    fontSize: '0.875rem',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  ghostButton: {
-    background: '#fff',
-    color: '#555',
-    border: '1.5px solid #e0e0e0',
-    borderRadius: '10px',
-    padding: '0.6rem 1rem',
-    fontWeight: '600',
-    fontSize: '0.875rem',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  statGrid: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem', marginBottom: '1.25rem' },
-  statCard: {
-    background: '#fff',
-    borderRadius: '14px',
-    padding: '0.75rem 0.5rem',
-    textAlign: 'center',
-    cursor: 'pointer',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-  },
-  statIcon: { display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' },
-  statNum: { fontSize: '1.4rem', fontWeight: '700' },
-  statLabel: { fontSize: '0.7rem', color: '#888', marginTop: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  filterRow: { display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' },
-  pill: {
-    border: '1.5px solid #e0e0e0',
-    borderRadius: '99px',
-    padding: '0.4rem 1rem',
-    fontSize: '0.85rem',
-    fontWeight: '500',
-  },
-  count: { marginLeft: 'auto', color: '#94a3b8', fontSize: '0.85rem' },
-  list: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
-  card: {
-    background: '#fff',
-    borderRadius: '14px',
-    padding: '1rem 1.25rem',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-  },
-  cardAvatar: {
-    width: '44px',
-    height: '44px',
-    borderRadius: '50%',
-    background: '#e8f0fe',
-    color: '#2563eb',
-    fontWeight: '700',
-    fontSize: '1.1rem',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  cardBody: { flex: 1, minWidth: 0 },
-  cardTop: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '0.4rem',
-    gap: '0.75rem',
-    flexWrap: 'wrap',
-  },
-  cardName: { fontWeight: '600', fontSize: '1rem' },
-  badge: { padding: '0.25rem 0.7rem', borderRadius: '99px', fontSize: '0.78rem', fontWeight: '600' },
-  cardRoute: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.4rem',
-    fontSize: '0.85rem',
-    color: '#555',
-    marginBottom: '0.5rem',
-    flexWrap: 'wrap',
-  },
-  cardMeta: { display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#888', flexWrap: 'wrap' },
-  metaItem: { display: 'flex', alignItems: 'center', gap: '4px' },
-  empty: {
-    textAlign: 'center',
-    padding: '4rem 2rem',
-    background: '#fff',
-    borderRadius: '14px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
 }

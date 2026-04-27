@@ -21,7 +21,6 @@ export default function Login() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      // Store the chosen role so AuthContext + ProtectedRoute use it
       setUserRole(mode)
       if (mode === 'admin') {
         navigate('/dashboard')
@@ -34,89 +33,114 @@ export default function Login() {
     }
   }
 
-  // Landing page — choose portal
   if (!mode) {
     return (
       <div style={styles.container}>
-        <div style={styles.landingCard}>
-          <h1 style={styles.brandTitle}>Andini Travels</h1>
-          <p style={styles.brandSub}>Choose your portal to continue</p>
+        <div className="card-premium" style={styles.landingCard}>
+          <div style={styles.brandContainer}>
+            <div style={styles.logoIcon}>
+              <Car size={32} color="white" />
+            </div>
+            <h1 className="heading-1" style={{ marginBottom: '0.5rem' }}>Andini Travels</h1>
+            <p className="text-label" style={{ textTransform: 'none', fontSize: '0.95rem' }}>Select your portal to continue</p>
+          </div>
 
           <div style={styles.portalGrid}>
-            <div style={styles.portalCard} onClick={() => setMode('admin')}>
-              <div style={{ ...styles.portalIcon, background: '#dbeafe' }}>
-                <Shield size={32} color="#2563eb" />
+            <div className="card card-hover" style={styles.portalCard} onClick={() => setMode('admin')}>
+              <div style={{ ...styles.portalIcon, background: 'var(--info-subtle)' }}>
+                <Shield size={28} color="var(--info)" />
               </div>
-              <div style={styles.portalLabel}>Admin Portal</div>
-              <div style={styles.portalDesc}>Manage bookings, drivers & reports</div>
+              <div className="text-value" style={{ marginBottom: '4px' }}>Admin Portal</div>
+              <div className="text-label" style={{ textTransform: 'none', fontSize: '0.75rem', lineHeight: '1.4' }}>Manage bookings, drivers & reports</div>
             </div>
 
-            <div style={styles.portalCard} onClick={() => setMode('driver')}>
-              <div style={{ ...styles.portalIcon, background: '#dcfce7' }}>
-                <Car size={32} color="#16a34a" />
+            <div className="card card-hover" style={styles.portalCard} onClick={() => setMode('driver')}>
+              <div style={{ ...styles.portalIcon, background: 'var(--success-subtle)' }}>
+                <Car size={28} color="var(--success)" />
               </div>
-              <div style={styles.portalLabel}>Driver Portal</div>
-              <div style={styles.portalDesc}>View trips, update status & availability</div>
+              <div className="text-value" style={{ marginBottom: '4px' }}>Driver Portal</div>
+              <div className="text-label" style={{ textTransform: 'none', fontSize: '0.75rem', lineHeight: '1.4' }}>View trips, update status & availability</div>
             </div>
+          </div>
+          
+          <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-light)' }}>
+            <p className="text-label" style={{ textTransform: 'none' }}>© 2024 Andini Travels. All rights reserved.</p>
           </div>
         </div>
       </div>
     )
   }
 
-  // Login form
   return (
     <div style={styles.container}>
-      <div style={styles.card}>
+      <div className="card-premium" style={styles.card}>
         <div style={styles.headerRow}>
           <div style={{
             ...styles.portalIcon,
-            background: mode === 'admin' ? '#dbeafe' : '#dcfce7',
-            width: '44px', height: '44px',
+            background: mode === 'admin' ? 'var(--info-subtle)' : 'var(--success-subtle)',
+            width: '48px', height: '48px', margin: 0
           }}>
             {mode === 'admin'
-              ? <Shield size={22} color="#2563eb" />
-              : <Car size={22} color="#16a34a" />
+              ? <Shield size={24} color="var(--info)" />
+              : <Car size={24} color="var(--success)" />
             }
           </div>
           <div>
-            <h1 style={styles.brand}>Andini Travels</h1>
-            <p style={styles.sub}>
-              {mode === 'admin' ? 'Admin Login' : 'Driver Login'}
+            <h2 className="heading-3" style={{ margin: 0 }}>Andini Travels</h2>
+            <p className="text-label" style={{ textTransform: 'none', fontSize: '0.85rem' }}>
+              {mode === 'admin' ? 'Administrative Access' : 'Driver Partner Access'}
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleLogin}>
-          <input
-            style={styles.input}
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <input
-            style={styles.input}
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          {error && <p style={styles.error}>{error}</p>}
+        <form onSubmit={handleLogin} style={{ marginTop: '1.5rem' }}>
+          <div className="input-group">
+            <label className="input-label">Email Address</label>
+            <input
+              style={{ width: '100%' }}
+              type="email"
+              placeholder="name@andinitravels.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="input-group">
+            <label className="input-label">Password</label>
+            <input
+              style={{ width: '100%' }}
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          
+          {error && (
+            <div className="badge-danger" style={{ width: '100%', padding: '10px', borderRadius: '8px', marginBottom: '1.25rem', justifyContent: 'center' }}>
+              {error}
+            </div>
+          )}
+          
           <button
+            className="btn btn-primary"
             style={{
-              ...styles.btn,
-              background: mode === 'admin' ? '#2563eb' : '#16a34a',
+              width: '100%',
+              padding: '12px',
+              background: mode === 'admin' ? 'var(--primary)' : 'var(--success)',
             }}
             disabled={loading}
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
 
-        <button style={styles.backLink} onClick={() => { setMode(null); setError(''); setEmail(''); setPassword('') }}>
+        <button 
+          className="btn btn-ghost" 
+          style={{ width: '100%', marginTop: '1.5rem', fontSize: '0.875rem' }} 
+          onClick={() => { setMode(null); setError(''); setEmail(''); setPassword('') }}
+        >
           ← Back to portal selection
         </button>
       </div>
@@ -130,44 +154,41 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#f5f6fa',
-    fontFamily: 'sans-serif',
-    padding: '1rem',
+    background: 'var(--bg-page)',
+    padding: '1.5rem',
   },
-  // Landing
   landingCard: {
-    background: '#fff',
-    padding: '2.5rem',
-    borderRadius: '20px',
+    padding: '3rem 2rem',
     width: '100%',
-    maxWidth: '520px',
-    boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
+    maxWidth: '560px',
     textAlign: 'center',
   },
-  brandTitle: {
-    fontSize: '1.8rem',
-    fontWeight: '800',
-    color: '#1a1a2e',
-    margin: '0 0 0.3rem 0',
+  brandContainer: {
+    marginBottom: '2.5rem',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
   },
-  brandSub: {
-    color: '#64748b',
-    fontSize: '0.95rem',
-    marginBottom: '2rem',
+  logoIcon: {
+    width: '64px',
+    height: '64px',
+    background: 'var(--primary)',
+    borderRadius: '18px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '1.25rem',
+    boxShadow: '0 8px 16px rgba(37, 99, 235, 0.2)',
   },
   portalGrid: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: '1rem',
+    gap: '1.25rem',
   },
   portalCard: {
-    background: '#fafbfd',
-    border: '1.5px solid #e2e8f0',
-    borderRadius: '16px',
-    padding: '1.5rem 1rem',
+    padding: '1.5rem 1.25rem',
     cursor: 'pointer',
     textAlign: 'center',
-    transition: 'border-color 0.2s, box-shadow 0.2s',
   },
   portalIcon: {
     width: '56px',
@@ -176,81 +197,18 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    margin: '0 auto 0.75rem',
+    margin: '0 auto 1rem',
   },
-  portalLabel: {
-    fontWeight: '700',
-    fontSize: '1rem',
-    color: '#1a1a2e',
-    marginBottom: '0.3rem',
-  },
-  portalDesc: {
-    fontSize: '0.78rem',
-    color: '#94a3b8',
-    lineHeight: 1.4,
-  },
-  // Login form
   card: {
-    background: '#fff',
     padding: '2.5rem',
-    borderRadius: '16px',
     width: '100%',
-    maxWidth: '400px',
-    boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+    maxWidth: '440px',
   },
   headerRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    marginBottom: '1.5rem',
-  },
-  brand: {
-    fontSize: '1.3rem',
-    fontWeight: '700',
-    color: '#1a1a2e',
-    margin: 0,
-  },
-  sub: {
-    color: '#64748b',
-    fontSize: '0.88rem',
-    margin: 0,
-  },
-  input: {
-    width: '100%',
-    padding: '0.75rem 1rem',
-    border: '1.5px solid #e0e0e0',
-    borderRadius: '8px',
-    fontSize: '1rem',
-    marginBottom: '1rem',
-    outline: 'none',
-    display: 'block',
-    boxSizing: 'border-box',
-  },
-  btn: {
-    width: '100%',
-    padding: '0.85rem',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '1rem',
-    fontWeight: '600',
-    cursor: 'pointer',
-  },
-  error: {
-    color: '#e53e3e',
-    fontSize: '0.875rem',
-    marginBottom: '0.75rem',
-  },
-  backLink: {
-    display: 'block',
-    width: '100%',
-    background: 'none',
-    border: 'none',
-    color: '#64748b',
-    fontSize: '0.88rem',
-    marginTop: '1.25rem',
-    cursor: 'pointer',
-    textAlign: 'center',
-    fontWeight: '500',
+    gap: '16px',
+    paddingBottom: '1.25rem',
+    borderBottom: '1px solid var(--border-light)',
   },
 }
