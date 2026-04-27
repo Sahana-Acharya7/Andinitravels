@@ -26,3 +26,7 @@ dist-ssr
 serviceAccountKey.json
 .env
 .env.*
+
+# Local agent configs and outputs
+.agents/
+graphify-out/
