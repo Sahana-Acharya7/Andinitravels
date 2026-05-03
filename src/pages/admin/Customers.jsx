@@ -8,9 +8,29 @@ import {
   serverTimestamp,
   updateDoc,
 } from 'firebase/firestore'
-import { Activity, Pencil, Plus, Trash2, User, X } from 'lucide-react'
+import { 
+  Pencil, 
+  Plus, 
+  Trash2, 
+  User, 
+  X, 
+  Search, 
+  Phone, 
+  Mail, 
+  MapPin, 
+  UserPlus, 
+  Users, 
+  ChevronLeft, 
+  ChevronRight,
+  Cake,
+  PhoneCall,
+  Mail as MailIcon,
+  MapPin as MapPinIcon,
+  Cake as CakeIcon,
+  Edit2,
+  Trash
+} from 'lucide-react'
 import { db } from '../../firebase'
-import { useNavigate } from 'react-router-dom'
 
 const EMPTY_CUSTOMER = {
   name: '',
@@ -18,10 +38,10 @@ const EMPTY_CUSTOMER = {
   address: '',
   email: '',
   birthday: '',
+  type: 'Business'
 }
 
 export default function Customers() {
-  const navigate = useNavigate()
   const [customers, setCustomers] = useState([])
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -67,8 +87,10 @@ export default function Customers() {
       ...form,
       mobile: form.mobile.trim(),
       name: form.name.trim(),
-      email: form.email.trim(),
-      address: form.address.trim(),
+      email: (form.email || '').trim(),
+      address: (form.address || '').trim(),
+      birthday: form.birthday || '',
+      type: form.type || 'Regular',
       updatedAt: serverTimestamp(),
     }
 
@@ -102,6 +124,7 @@ export default function Customers() {
       address: customer.address || '',
       email: customer.email || '',
       birthday: customer.birthday || '',
+      type: customer.type || 'Business'
     })
     setEditingId(customer.id)
     setShowForm(true)
@@ -109,254 +132,245 @@ export default function Customers() {
 
   const handleDelete = async customer => {
     if (!window.confirm(`Delete passenger ${customer.name}?`)) return
-
     await deleteDoc(doc(db, 'customers', customer.id))
   }
 
   return (
-    <>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+    <div style={{ maxWidth: '1440px', margin: '0 auto' }}>
+      {/* Page Header Area */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
         <div>
-          <h1 className="heading-2" style={{ margin: 0 }}>Passengers</h1>
-          <p className="text-label" style={{ textTransform: 'none', marginTop: '4px' }}>Store and reuse passenger details for bookings.</p>
+          <h1 style={{ fontSize: '1.875rem', fontWeight: 700, color: '#0f172a', margin: '0 0 0.25rem 0' }}>Passengers</h1>
+          <p style={{ color: '#64748b', fontSize: '1rem' }}>Store and reuse passenger details for bookings.</p>
         </div>
-        <button className="btn-primary" onClick={startCreate}>
-          <Plus size={18} /> New Passenger
+        <button 
+          className="btn-new-booking" 
+          style={{ width: 'auto', padding: '0.625rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }} 
+          onClick={startCreate}
+        >
+          <UserPlus size={20} />
+          <span>+ New Passenger</span>
         </button>
-      </header>
+      </div>
 
-      <div style={styles.toolbar}>
-        <div className="search-container">
-          <Activity className="icon" size={18} />
-          <input
-            placeholder="Search by name, mobile, or email..."
+      {/* Search and Stats Row */}
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div style={{ position: 'relative', flex: 1 }}>
+          <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={20} />
+          <input 
+            style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 3rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: '1rem', outline: 'none', fontSize: '0.875rem' }} 
+            placeholder="Search by name, mobile, or email..." 
+            type="text"
             value={search}
-            onChange={event => setSearch(event.target.value)}
+            onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <span className="text-label" style={{ fontWeight: 600 }}>{filteredCustomers.length} Total Passengers</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: '1rem', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+          <Users size={20} color="#2563eb" fill="#2563eb" fillOpacity="0.1" />
+          <span style={{ color: '#0f172a', fontWeight: 700 }}>{customers.length}</span>
+          <span style={{ color: '#64748b', fontSize: '0.875rem', fontWeight: 500 }}>Total Passengers</span>
+        </div>
       </div>
 
       {showForm && (
-        <form className="card-premium" style={styles.formCard} onSubmit={handleSubmit}>
-          <div style={styles.formHeader}>
-            <div>
-              <h3 className="heading-3">{editingId ? 'Edit Passenger' : 'New Passenger'}</h3>
-              <p className="text-label" style={{ textTransform: 'none', marginTop: '2px' }}>Fill in the details below to save this passenger.</p>
-            </div>
-            <button type="button" className="btn btn-ghost" style={{ padding: '8px' }} onClick={resetForm}>
-              <X size={20} />
-            </button>
-          </div>
-
-          <div style={styles.grid}>
-            <div className="input-group">
-              <label className="input-label">Full Name <span style={{ color: 'var(--danger)' }}>*</span></label>
-              <input
-                style={{ width: '100%' }}
-                value={form.name}
-                onChange={event => set('name', event.target.value)}
-                placeholder="e.g. John Doe"
-                required
-              />
-            </div>
-            <div className="input-group">
-              <label className="input-label">Mobile Number <span style={{ color: 'var(--danger)' }}>*</span></label>
-              <input
-                style={{ width: '100%' }}
-                type="tel"
-                value={form.mobile}
-                onChange={event => set('mobile', event.target.value)}
-                placeholder="e.g. +91 98765 43210"
-                required
-              />
-            </div>
-            <div className="input-group">
-              <label className="input-label">Email Address</label>
-              <input
-                style={{ width: '100%' }}
-                type="email"
-                value={form.email}
-                onChange={event => set('email', event.target.value)}
-                placeholder="e.g. john@example.com"
-              />
-            </div>
-            <div className="input-group">
-              <label className="input-label">Birthday</label>
-              <input
-                style={{ width: '100%' }}
-                type="date"
-                value={form.birthday}
-                onChange={event => set('birthday', event.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="input-group">
-            <label className="input-label">Address</label>
-            <textarea
-              style={{ width: '100%', minHeight: '80px', resize: 'vertical' }}
-              value={form.address}
-              onChange={event => set('address', event.target.value)}
-              placeholder="Full residence or office address..."
-            />
-          </div>
-
-          <div style={styles.formActions}>
-            <button type="button" className="btn btn-outline" onClick={resetForm}>
-              Cancel
-            </button>
-            <button className="btn btn-primary" disabled={loading}>
-              {loading ? 'Saving...' : editingId ? 'Update Passenger' : 'Save Passenger'}
-            </button>
-          </div>
-        </form>
-      )}
-
-      <div style={styles.list}>
-        {filteredCustomers.length === 0 ? (
-          <div className="card" style={styles.empty}>
-            <div style={styles.emptyIcon}>
-              <User size={48} color="var(--text-tertiary)" />
-            </div>
-            <h3 className="heading-3">No passengers found</h3>
-            <p className="text-label" style={{ textTransform: 'none', marginTop: '4px' }}>Add your first passenger to start building your database.</p>
-            {!showForm && (
-              <button className="btn btn-primary" style={{ marginTop: '1.5rem' }} onClick={startCreate}>
-                Add Passenger
+        <div className="data-card" style={{ marginBottom: '2rem', animation: 'slideIn 0.3s ease-out' }}>
+          <form className="dashboard-content" style={{ padding: '2rem' }} onSubmit={handleSubmit}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>{editingId ? 'Edit Passenger' : 'Add New Passenger'}</h3>
+              <button type="button" className="icon-btn" onClick={resetForm}>
+                <X size={20} />
               </button>
-            )}
-          </div>
-        ) : (
-          filteredCustomers.map(customer => (
-            <div key={customer.id} className="card card-hover" style={styles.customerCard}>
-              <div style={styles.avatar}>{customer.name?.[0]?.toUpperCase() || '?'}</div>
-              <div style={styles.cardBody}>
-                <div style={styles.cardHeaderRow}>
-                  <div className="text-value" style={{ fontSize: '1.05rem' }}>{customer.name}</div>
-                  <div style={styles.cardActions}>
-                    <button className="btn btn-secondary" style={{ padding: '6px' }} onClick={() => startEdit(customer)}>
-                      <Pencil size={14} />
-                    </button>
-                    <button className="btn btn-danger" style={{ padding: '6px' }} onClick={() => handleDelete(customer)}>
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
+            </div>
+
+            <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', marginBottom: '1.5rem' }}>
+              <div className="form-group">
+                <label className="form-label">Full Name</label>
+                <div className="input-container">
+                  <input
+                    value={form.name}
+                    onChange={event => set('name', event.target.value)}
+                    placeholder="e.g. Digant Trivedi"
+                    required
+                  />
                 </div>
-                
-                <div style={styles.metaRow}>
-                  {customer.mobile && (
-                    <div style={styles.metaItem}>
-                      <Activity size={14} color="var(--text-tertiary)" />
-                      <span className="text-label" style={{ textTransform: 'none', fontSize: '0.8125rem' }}>{customer.mobile}</span>
-                    </div>
-                  )}
-                  {customer.email && (
-                    <div style={styles.metaItem}>
-                      <Activity size={14} color="var(--text-tertiary)" />
-                      <span className="text-label" style={{ textTransform: 'none', fontSize: '0.8125rem' }}>{customer.email}</span>
-                    </div>
-                  )}
-                  {customer.birthday && (
-                    <div style={styles.metaItem}>
-                      <Plus size={14} color="var(--text-tertiary)" />
-                      <span className="text-label" style={{ textTransform: 'none', fontSize: '0.8125rem' }}>{customer.birthday}</span>
-                    </div>
-                  )}
+              </div>
+              <div className="form-group">
+                <label className="form-label">Passenger Type</label>
+                <div className="input-container">
+                  <select 
+                    style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', background: 'white', fontSize: '0.9375rem' }}
+                    value={form.type}
+                    onChange={event => set('type', event.target.value)}
+                  >
+                    <option value="Business">Business</option>
+                    <option value="Premium">Premium</option>
+                    <option value="Regular">Regular</option>
+                  </select>
                 </div>
-                
-                {customer.address && (
-                  <p className="text-label" style={{ textTransform: 'none', fontSize: '0.8125rem', marginTop: '8px', lineHeight: 1.4 }}>
-                    {customer.address}
-                  </p>
-                )}
+              </div>
+              <div className="form-group">
+                <label className="form-label">Mobile Number</label>
+                <div className="input-container">
+                  <input
+                    type="tel"
+                    value={form.mobile}
+                    onChange={event => set('mobile', event.target.value)}
+                    placeholder="e.g. +91 9820608212"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <div className="input-container">
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={event => set('email', event.target.value)}
+                    placeholder="e.g. digant@gmail.com"
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Birthday</label>
+                <div className="input-container">
+                  <input
+                    type="date"
+                    value={form.birthday}
+                    onChange={event => set('birthday', event.target.value)}
+                  />
+                </div>
               </div>
             </div>
-          ))
-        )}
-      </div>
-    </>
-  )
-}
 
-const styles = {
-  toolbar: {
-    display: 'flex',
-    gap: '1rem',
-    alignItems: 'center',
-    marginBottom: '1.5rem',
-    flexWrap: 'wrap',
-  },
-  formCard: {
-    padding: '2rem',
-    marginBottom: '1.5rem',
-  },
-  formHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: '1rem',
-    marginBottom: '1.5rem',
-    paddingBottom: '1.25rem',
-    borderBottom: '1px solid var(--border-light)',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '1rem',
-  },
-  formActions: {
-    display: 'flex',
-    justifyContent: 'flex-end',
-    gap: '12px',
-    marginTop: '0.5rem',
-  },
-  list: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
-  customerCard: {
-    padding: '1.25rem',
-    display: 'flex',
-    gap: '1.25rem',
-    alignItems: 'flex-start',
-  },
-  avatar: {
-    width: '48px',
-    height: '48px',
-    borderRadius: '14px',
-    background: 'var(--primary-subtle)',
-    color: 'var(--primary)',
-    fontWeight: '700',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    fontSize: '1.125rem',
-  },
-  cardBody: { flex: 1, minWidth: 0 },
-  cardHeaderRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '0.5rem',
-    gap: '1rem',
-  },
-  cardActions: { display: 'flex', gap: '8px' },
-  metaRow: { display: 'flex', gap: '1.25rem', flexWrap: 'wrap' },
-  metaItem: { display: 'flex', alignItems: 'center', gap: '6px' },
-  empty: {
-    textAlign: 'center',
-    padding: '4rem 2rem',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
-  emptyIcon: {
-    width: '80px',
-    height: '80px',
-    background: 'var(--bg-page)',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: '1.5rem',
-  }
+            <div className="form-group" style={{ marginBottom: '2rem' }}>
+              <label className="form-label">Full Address</label>
+              <div className="input-container">
+                <textarea
+                  style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', minHeight: '100px', fontSize: '0.9375rem' }}
+                  value={form.address}
+                  onChange={event => set('address', event.target.value)}
+                  placeholder="Street, City, State, etc."
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', alignItems: 'center' }}>
+              <button type="button" className="btn-secondary" onClick={resetForm}>Cancel</button>
+              <button className="btn-new-booking" style={{ width: 'auto', padding: '0 32px', marginBottom: 0 }} disabled={loading}>
+                {loading ? 'Saving...' : editingId ? 'Update Passenger' : 'Save Passenger'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Passenger List (White Card) */}
+      <div style={{ background: 'white', borderRadius: '1rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+            <tr>
+              <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Passenger Info</th>
+              <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contact Details</th>
+              <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Address</th>
+              <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody style={{ divideY: '1px solid #f1f5f9' }}>
+            {filteredCustomers.map(customer => (
+              <tr key={customer.id} className="group-hover-row" style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s' }}>
+                <td style={{ padding: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ 
+                      width: '3rem', 
+                      height: '3rem', 
+                      borderRadius: '0.75rem', 
+                      background: customer.type === 'Premium' ? 'linear-gradient(to bottom right, #14b8a6, #059669)' : 'linear-gradient(to bottom right, #2563eb, #4f46e5)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      color: 'white', 
+                      fontWeight: 700, 
+                      fontSize: '1.125rem' 
+                    }}>
+                      {customer.name?.[0]?.toUpperCase() || 'P'}
+                    </div>
+                    <div>
+                      <h4 style={{ fontWeight: 700, color: '#0f172a', margin: 0 }}>{customer.name}</h4>
+                      <span className={`status-badge ${customer.type?.toLowerCase() || 'regular'}`} style={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        padding: '0.125rem 0.5rem', 
+                        borderRadius: '9999px', 
+                        fontSize: '10px', 
+                        fontWeight: 700, 
+                        textTransform: 'uppercase',
+                        marginTop: '4px'
+                      }}>
+                        {customer.type || 'Regular'}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                <td style={{ padding: '1.5rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontSize: '0.875rem' }}>
+                      <PhoneCall size={16} color="#94a3b8" />
+                      {customer.mobile}
+                    </div>
+                    {customer.email && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontSize: '0.875rem' }}>
+                        <MailIcon size={16} color="#94a3b8" />
+                        {customer.email}
+                      </div>
+                    )}
+                    {customer.birthday && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontSize: '0.875rem' }}>
+                        <CakeIcon size={16} color="#94a3b8" />
+                        {customer.birthday}
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td style={{ padding: '1.5rem' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', color: '#475569', fontSize: '0.875rem', maxWidth: '320px' }}>
+                    <MapPinIcon size={18} color="#94a3b8" style={{ flexShrink: 0 }} />
+                    <span className="line-clamp-2">{customer.address || 'No address provided'}</span>
+                  </div>
+                </td>
+                <td style={{ padding: '1.5rem', textAlign: 'right' }}>
+                  <div className="action-buttons-group" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                    <button 
+                      style={{ padding: '0.5rem', color: '#94a3b8', borderRadius: '0.5rem', border: 'none', background: 'transparent', cursor: 'pointer' }} 
+                      onClick={() => startEdit(customer)}
+                      title="Edit"
+                    >
+                      <Edit2 size={20} />
+                    </button>
+                    <button 
+                      style={{ padding: '0.5rem', color: '#94a3b8', borderRadius: '0.5rem', border: 'none', background: 'transparent', cursor: 'pointer' }} 
+                      onClick={() => handleDelete(customer)}
+                      title="Delete"
+                    >
+                      <Trash size={20} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* Pagination / Footer */}
+        <div style={{ padding: '1rem 1.5rem', background: '#f8fafc', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'between' }}>
+          <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0 }}>Showing {filteredCustomers.length} of {customers.length} passengers</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginLeft: 'auto' }}>
+            <button className="page-btn" disabled><ChevronLeft size={20} /></button>
+            <button className="page-btn active" style={{ width: '2rem', height: '2rem', fontSize: '0.75rem' }}>1</button>
+            <button className="page-btn" disabled><ChevronRight size={20} /></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }

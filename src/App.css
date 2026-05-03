@@ -1,65 +1,25 @@
 /* Modern UI Components for Andini Travels */
 
-:root {
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-subtle: #eff6ff;
-  --success: #10b981;
-  --success-subtle: #ecfdf5;
-  --warning: #f59e0b;
-  --warning-subtle: #fffbeb;
-  --danger: #ef4444;
-  --danger-subtle: #fef2f2;
-  --info: #3b82f6;
-  --info-subtle: #eff6ff;
-  --bg-page: #f8fafc;
-  --bg-card: #ffffff;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-tertiary: #94a3b8;
-  --border: #e2e8f0;
-  --border-light: #f1f5f9;
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-full: 9999px;
-  --transition-fast: 150ms ease;
   --transition-normal: 250ms ease;
 }
 
-/* Layout */
-.admin-layout {
-  display: flex;
-  min-height: 100vh;
-  background: var(--bg-page);
+[data-theme='dark'] {
+  --bg-page: #020617;
+  --bg-card: #0f172a;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+  --border: #1e293b;
+  --border-light: #0f172a;
+  --primary-subtle: rgba(37, 99, 235, 0.1);
 }
 
-.sidebar {
-  width: 260px;
-  background: white;
-  border-right: 1px solid var(--border-light);
-  display: flex;
-  flex-direction: column;
-  padding: 24px;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  flex-shrink: 0;
-}
-
+/* Layout handled in index.css */
 .main-content {
   flex: 1;
-  padding: 32px;
-  max-width: 1200px;
-  margin: 0 auto;
   width: 100%;
 }
 
-@media (max-width: 1024px) {
-  .sidebar { display: none; }
-  .main-content { padding: 20px; }
-}
 
 /* Sidebar Elements */
 .sidebar-logo {
@@ -123,7 +83,7 @@
 }
 
 .kpi-card {
-  background: white;
+  background: var(--bg-card);
   padding: 20px;
   border-radius: 20px;
   border: 1px solid var(--border-light);
@@ -187,7 +147,7 @@
 .filter-pills {
   display: flex;
   gap: 8px;
-  background: white;
+  background: var(--bg-card);
   padding: 6px;
   border-radius: 12px;
   border: 1px solid var(--border-light);
@@ -221,7 +181,7 @@
   padding: 10px 16px 10px 40px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: white;
+  background: var(--bg-card);
   font-size: 0.875rem;
 }
 
@@ -235,7 +195,7 @@
 
 /* Trip Cards */
 .trip-card {
-  background: white;
+  background: var(--bg-card);
   border-radius: 20px;
   padding: 24px;
   margin-bottom: 16px;
@@ -256,7 +216,7 @@
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: #f1f5f9;
+  background: var(--bg-page);
   display: flex;
   align-items: center;
   justify-content: center;

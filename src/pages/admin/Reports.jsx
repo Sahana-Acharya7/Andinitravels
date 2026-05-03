@@ -102,18 +102,23 @@ export default function Reports() {
   }))
 
   // DRIVER PERFORMANCE
-  const driverPerformance = drivers.slice(0, 2).map((d, i) => {
-    const dTrips = bookings.filter(b => isCountable(b) && b.driverId === d.id).length
-    const dRev = bookings.filter(b => isCountable(b) && b.driverId === d.id).reduce((acc, b) => acc + (parseInt(b.driverAllowance) || 0), 0)
+  const driverPerformance = drivers.map(d => {
+    const driverBookings = bookings.filter(b => isCountable(b) && b.driverId === d.id)
+    const dTrips = driverBookings.length
+    const dRev = driverBookings.reduce((acc, b) => acc + getFinalAmount(b), 0)
+    
+    // Performance score: (Trips / Total Trips) * 100 or some other metric
+    const dPerf = totalTrips > 0 ? Math.round((dTrips / totalTrips) * 100) : 0
+
     return {
       name: d.name,
       mobile: d.mobile,
-      trips: dTrips || (i === 0 ? 4 : 1),
-      revenue: dRev || (i === 0 ? 2800 : 0),
-      perf: i === 0 ? 80 : 10,
+      trips: dTrips,
+      revenue: dRev,
+      perf: dPerf,
       initials: (d.name || 'D').split(' ').map(n => n[0]).join('')
     }
-  })
+  }).sort((a, b) => b.revenue - a.revenue).slice(0, 5)
 
   // TOP CUSTOMERS
   const topCustomers = [
@@ -206,9 +211,9 @@ export default function Reports() {
                         <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} dy={10} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} tickFormatter={v => `${v/1000}K`} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-light)" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-tertiary)' }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-tertiary)' }} tickFormatter={v => `${v/1000}K`} />
                     <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.1)' }} />
                     <Area type="monotone" dataKey="Revenue" stroke="#2563eb" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" dot={{ r: 4, fill: '#2563eb', strokeWidth: 2, stroke: 'white' }} activeDot={{ r: 6 }} />
                   </AreaChart>
@@ -240,8 +245,8 @@ export default function Reports() {
                           ))}
                         </Pie>
                         <Tooltip />
-                        <text x="50%" y="45%" textAnchor="middle" dominantBaseline="middle" style={{ fontSize: '1.75rem', fontWeight: 900 }}>{totalTrips}</text>
-                        <text x="50%" y="60%" textAnchor="middle" dominantBaseline="middle" style={{ fontSize: '0.75rem', fontWeight: 700, fill: '#94a3b8', textTransform: 'uppercase' }}>Total Trips</text>
+                        <text x="50%" y="45%" textAnchor="middle" dominantBaseline="middle" style={{ fontSize: '1.75rem', fontWeight: 900, fill: 'var(--text-primary)' }}>{totalTrips}</text>
+                        <text x="50%" y="60%" textAnchor="middle" dominantBaseline="middle" style={{ fontSize: '0.75rem', fontWeight: 700, fill: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Total Trips</text>
                      </RechartsPieChart>
                   </ResponsiveContainer>
                </div>
@@ -409,8 +414,8 @@ const styles = {
   title: { fontSize: '2rem', fontWeight: 900, margin: 0, color: 'var(--text-primary)' },
   subtitle: { fontSize: '0.9375rem', color: 'var(--text-tertiary)', marginTop: '4px' },
   actionRow: { display: 'flex', gap: '12px', alignItems: 'center' },
-  datePicker: { background: 'white', border: '1px solid var(--border)', borderRadius: '12px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer' },
-  outlineBtn: { background: 'white', color: 'var(--text-secondary)', border: '1px solid var(--border)', padding: '10px 16px', borderRadius: '12px', fontWeight: 700, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' },
+  datePicker: { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer' },
+  outlineBtn: { background: 'var(--bg-card)', color: 'var(--text-secondary)', border: '1px solid var(--border)', padding: '10px 16px', borderRadius: '12px', fontWeight: 700, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' },
 
   kpiGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px', marginBottom: '32px' },
   kpiTop: { padding: '24px', display: 'flex', alignItems: 'center', gap: '20px' },
@@ -420,9 +425,9 @@ const styles = {
   kpiChange: { fontSize: '0.75rem', fontWeight: 700, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' },
 
   chartGrid: { display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px', marginBottom: '32px' },
-  card: { background: 'white', borderRadius: '24px', border: '1px solid var(--border-light)', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' },
+  card: { background: 'var(--bg-card)', borderRadius: '24px', border: '1px solid var(--border-light)', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' },
   cardHeader: { padding: '20px 24px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  cardTitle: { fontSize: '1.125rem', fontWeight: 800, margin: 0 },
+  cardTitle: { fontSize: '1.125rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' },
   cardSubtitle: { fontSize: '0.75rem', color: 'var(--text-tertiary)', margin: '4px 0 0' },
   tabs: { background: 'var(--bg-page)', padding: '4px', borderRadius: '10px', display: 'flex' },
   tab: { border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' },
@@ -432,12 +437,12 @@ const styles = {
   legendItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   legendName: { fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary)' },
   legendPercent: { fontSize: '0.875rem', fontWeight: 900, color: 'var(--text-primary)' },
-  legendValue: { fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 },
+  legendValue: { fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 600 },
 
-  insightsRow: { background: 'white', borderRadius: '24px', border: '1px solid var(--border-light)', padding: '24px', marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '40px' },
+  insightsRow: { background: 'var(--bg-card)', borderRadius: '24px', border: '1px solid var(--border-light)', padding: '24px', marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '40px' },
   insightsHeader: { display: 'flex', alignItems: 'center', gap: '16px', borderRight: '1px solid var(--border-light)', paddingRight: '40px' },
-  insightsIconBox: { width: '48px', height: '48px', borderRadius: '14px', background: '#2563eb', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)' },
-  insightsTitle: { fontSize: '1.125rem', fontWeight: 800, margin: 0, width: '100px', lineHeight: 1.2 },
+  insightsIconBox: { width: '48px', height: '48px', borderRadius: '14px', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)' },
+  insightsTitle: { fontSize: '1.125rem', fontWeight: 800, margin: 0, width: '100px', lineHeight: 1.2, color: 'var(--text-primary)' },
   insightsGrid: { flex: 1, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' },
   insightItem: { display: 'flex', alignItems: 'center', gap: '12px' },
   insightIcon: { width: '32px', height: '32px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
@@ -447,16 +452,17 @@ const styles = {
   tableGrid: { display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px' },
   tableContainer: { padding: '0 0 16px' },
   table: { width: '100%', borderCollapse: 'collapse' },
-  th: { padding: '12px 24px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9' },
-  td: { padding: '16px 24px', borderBottom: '1px solid #f1f5f9', verticalAlign: 'middle' },
+  th: { padding: '12px 24px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-light)' },
+  td: { padding: '16px 24px', borderBottom: '1px solid var(--border-light)', verticalAlign: 'middle' },
   tableName: { fontSize: '0.9375rem', fontWeight: 800, color: 'var(--text-primary)' },
-  tableSub: { fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 },
-  miniAvatar: { width: '40px', height: '40px', borderRadius: '12px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9375rem', fontWeight: 900 },
+  tableSub: { fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 600 },
+  miniAvatar: { width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary-subtle)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9375rem', fontWeight: 900 },
   perfBox: { display: 'flex', flexDirection: 'column', gap: '6px' },
-  perfText: { fontSize: '0.75rem', fontWeight: 800, color: '#64748b' },
-  perfBarBg: { height: '6px', background: '#f1f5f9', borderRadius: '10px', overflow: 'hidden' },
-  perfBarFill: { height: '100%', background: '#2563eb', borderRadius: '10px' },
-  rankBadge: { width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.875rem', fontWeight: 900, color: '#b45309' },
+  perfText: { fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-tertiary)' },
+  perfBarBg: { height: '6px', background: 'var(--bg-page)', borderRadius: '10px', overflow: 'hidden' },
+  perfBarFill: { height: '100%', background: 'var(--primary)', borderRadius: '10px' },
+  rankBadge: { width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.875rem', fontWeight: 900, color: 'var(--primary)' },
   viewMoreBox: { padding: '16px 24px' },
-  viewMoreBtn: { width: '100%', background: 'none', border: '1px solid #e2e8f0', padding: '10px', borderRadius: '12px', fontSize: '0.8125rem', fontWeight: 700, color: '#2563eb', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }
+  viewMoreBtn: { width: '100%', background: 'none', border: '1px solid var(--border)', padding: '10px', borderRadius: '12px', fontSize: '0.8125rem', fontWeight: 700, color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }
 }
+

@@ -7,8 +7,11 @@ import DriverDashboard from './pages/driver/DriverDashboard'
 import TripDetail from './pages/driver/TripDetail'
 import Availability from './pages/driver/Availability'
 import DriverProfile from './pages/driver/DriverProfile'
+import Earnings from './pages/driver/Earnings'
+import Schedule from './pages/driver/Schedule'
 import Dashboard from './pages/admin/Dashboard'
 import AdminLayout from './components/AdminLayout'
+import DriverLayout from './components/DriverLayout'
 import CreateBooking from './pages/admin/CreateBooking'
 import BookingDetail from './pages/admin/BookingDetail'
 import Drivers from './pages/admin/Drivers'
@@ -32,10 +35,20 @@ function App() {
           <Route path="/unauthorized" element={<Unauthorized />} />
 
           {/* Driver Routes */}
-          <Route path="/driver/trips" element={<ProtectedRoute allowedRoles={['driver']}><DriverDashboard /></ProtectedRoute>} />
-          <Route path="/driver/booking/:bookingId" element={<ProtectedRoute allowedRoles={['driver']}><TripDetail /></ProtectedRoute>} />
-          <Route path="/driver/availability" element={<ProtectedRoute allowedRoles={['driver']}><Availability /></ProtectedRoute>} />
-          <Route path="/driver/profile" element={<ProtectedRoute allowedRoles={['driver']}><DriverProfile /></ProtectedRoute>} />
+          <Route 
+            element={
+              <ProtectedRoute allowedRoles={['driver']}>
+                <DriverLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/driver/trips" element={<DriverDashboard />} />
+            <Route path="/driver/booking/:bookingId" element={<TripDetail />} />
+            <Route path="/driver/availability" element={<Availability />} />
+            <Route path="/driver/profile" element={<DriverProfile />} />
+            <Route path="/driver/earnings" element={<Earnings />} />
+            <Route path="/driver/schedule" element={<Schedule />} />
+          </Route>
 
           {/* Admin Routes */}
           <Route 

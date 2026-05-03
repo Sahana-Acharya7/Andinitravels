@@ -1,79 +1,133 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
 import { auth } from '../firebase'
 import {
-  Activity,
   Calendar,
   Car,
   LogOut,
   Plus,
-  Play,
   Users,
   TrendingUp,
+  Settings,
+  Bell,
+  ChevronDown,
+  LayoutDashboard,
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  Sun,
+  Moon
 } from 'lucide-react'
 
 export default function AdminLayout() {
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isDark, setIsDark] = useState(localStorage.getItem('theme') === 'dark')
   const navigate = useNavigate()
   const location = useLocation()
 
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light')
+    localStorage.setItem('theme', isDark ? 'dark' : 'light')
+  }, [isDark])
+
   const navItems = [
-    { label: 'Dashboard', path: '/dashboard', icon: <Play size={18} /> },
-    { label: 'Passengers', path: '/customers', icon: <Users size={18} /> },
-    { label: 'Drivers', path: '/drivers', icon: <Car size={18} /> },
-    { label: 'Reports', path: '/reports', icon: <TrendingUp size={18} /> },
+    { label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
+    { label: 'Passengers', path: '/customers', icon: <Users size={20} /> },
+    { label: 'Drivers', path: '/drivers', icon: <Car size={20} /> },
+    { label: 'Reports', path: '/reports', icon: <TrendingUp size={20} /> },
   ]
 
+  const getPageTitle = () => {
+    const current = navItems.find(item => item.path === location.pathname)
+    return current ? current.label : 'Admin'
+  }
+
   return (
-    <div className="admin-layout">
-      {/* Persistent Sidebar */}
-      <aside className="sidebar">
+    <div className={`admin-layout ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
+      {/* Sidebar */}
+      <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-logo">
-          <div style={{ background: 'var(--primary)', padding: '8px', borderRadius: '10px' }}>
+          <div className="sidebar-logo-icon">
             <Car size={24} color="white" />
           </div>
-          <div>
-            <div style={{ fontWeight: '800', fontSize: '1.1rem', lineHeight: 1 }}>Andini Travels</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: '2px' }}>Admin Dashboard</div>
-          </div>
+          {!isCollapsed && (
+            <div className="sidebar-logo-text">
+              <h2>Andini Travels</h2>
+              <p>Admin Dashboard</p>
+            </div>
+          )}
         </div>
 
-        <button className="btn-primary" style={{ width: '100%', marginBottom: '32px' }} onClick={() => navigate('/create')}>
-          <Plus size={18} /> New Booking
+        <button className="btn-new-booking" onClick={() => navigate('/create')}>
+          <Plus size={18} /> {!isCollapsed && '+ New Booking'}
         </button>
 
-        <nav className="nav-list">
+        <nav className="sidebar-nav">
           {navItems.map(item => (
             <button 
               key={item.path}
-              className={`nav-item ${location.pathname === item.path ? 'active' : ''}`} 
+              className={`sidebar-nav-item ${location.pathname === item.path ? 'active' : ''}`} 
               onClick={() => navigate(item.path)}
+              title={isCollapsed ? item.label : ''}
             >
-              {item.icon} {item.label}
+              {item.icon} {!isCollapsed && item.label}
             </button>
           ))}
         </nav>
 
-        <div style={{ marginTop: 'auto' }}>
-          <button className="nav-item" style={{ color: 'var(--danger)' }} onClick={() => signOut(auth)}>
-            <LogOut size={18} /> Logout
-          </button>
-        </div>
-
-        <div className="sidebar-promo">
-          <div style={{ marginBottom: '12px', textAlign: 'center' }}>
-            <div style={{ width: '60px', height: '60px', background: 'white', borderRadius: '16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-sm)' }}>
-              <Car size={32} color="var(--primary)" />
+        {/* Travel Agency Branding Card */}
+        {!isCollapsed && (
+          <div className="agency-sidebar-card">
+            <div className="agency-header">
+              <div className="agency-icon-box">
+                <Car size={18} />
+              </div>
+              <span>Elite Service</span>
+            </div>
+            <div className="agency-body">
+              <p>Andini Travels: Providing premium travel experiences and seamless journeys since 2018.</p>
             </div>
           </div>
-          <div style={{ fontWeight: '700', fontSize: '0.9rem', marginBottom: '8px' }}>Travel management <br/><span style={{ color: 'var(--primary)' }}>made simple</span></div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Manage bookings, drivers and trips efficiently.</p>
+        )}
+
+        <div className="sidebar-footer">
+          <button className="sidebar-nav-item" onClick={() => setIsCollapsed(!isCollapsed)}>
+            {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />} 
+            {!isCollapsed && 'Collapse Menu'}
+          </button>
+          <button className="sidebar-nav-item" style={{ color: '#ef4444' }} onClick={() => signOut(auth)}>
+            <LogOut size={20} /> {!isCollapsed && 'Logout'}
+          </button>
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="main-content">
-        <Outlet />
+      {/* Main Content */}
+      <main className="main-content-area">
+        {/* Header */}
+        <header className="content-header">
+          <div className="header-title">
+            <h1>{getPageTitle()}</h1>
+          </div>
+
+          <div className="header-actions">
+            {/* Notification and Profile icons removed per user request */}
+            <div className="date-picker-trigger">
+              <Calendar size={18} />
+              <span>Oct 24, 2023 - Oct 31, 2023</span>
+              <ChevronDown size={16} />
+            </div>
+            
+            <button className="icon-btn" onClick={() => setIsDark(!isDark)} title="Toggle Theme">
+              {isDark ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <div className="dashboard-content">
+          <Outlet />
+        </div>
       </main>
     </div>
   )

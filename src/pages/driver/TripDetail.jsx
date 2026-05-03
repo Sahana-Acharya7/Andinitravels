@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, MapPin, Phone, MessageCircle, CheckCircle, XCircle, Play, Flag } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, MessageCircle, CheckCircle, XCircle, Play, Flag, Info, Wallet } from 'lucide-react'
 
 export default function TripDetail() {
   const { bookingId } = useParams()
@@ -32,8 +32,11 @@ export default function TripDetail() {
   })
   const [submitting, setSubmitting] = useState(false)
 
-  if (!booking) return <div style={{ padding: '2rem' }}>Loading trip details...</div>
-
+  if (!booking) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+      <div className="loading-spinner" />
+    </div>
+  )
 
   const handleExpenseChange = (field, value) => {
     setExpenses(prev => ({ ...prev, [field]: value }))
@@ -58,7 +61,6 @@ export default function TripDetail() {
   }
 
   const handleSubmitTrip = async () => {
-    // Validate
     const allFilled = Object.values(expenses).every(v => v !== '')
     if (!allFilled) {
       alert("Please fill in all expense fields. Use 0 if no expense was incurred.")
@@ -92,7 +94,6 @@ export default function TripDetail() {
     }
   }
 
-  // Utilities
   const openMaps = () => window.open(`https://maps.google.com/?q=${encodeURIComponent(booking.pickupPoint)}`, '_blank')
   const callCustomer = () => window.open(`tel:${booking.mobileNumber}`)
   const whatsappCustomer = () => {
@@ -102,235 +103,214 @@ export default function TripDetail() {
   }
 
   return (
-    <div style={styles.page}>
+    <div style={styles.container}>
       <div style={styles.header}>
-        <h2 style={styles.title}>Trip Details</h2>
-        <button style={styles.back} onClick={() => navigate('/driver/trips')}>
-          <ArrowLeft size={18} /> Back
+        <button style={styles.backBtn} onClick={() => navigate('/driver/trips')}>
+          <ArrowLeft size={18} /> Back to Trips
         </button>
-      </div>
-
-      <div style={styles.utilityRow}>
-        <button style={styles.utilBtn} onClick={openMaps}><MapPin size={16} /> Google Maps</button>
-        <button style={styles.utilBtn} onClick={callCustomer}><Phone size={16} /> Call</button>
-        <button style={styles.utilBtn} onClick={whatsappCustomer}><MessageCircle size={16} /> WhatsApp</button>
-      </div>
-
-      <div style={styles.card}>
-        <div style={styles.sectionHeader}>
-          <span style={styles.sectionTitle}>Trip Information</span>
-        </div>
-        <div style={styles.section}>
-          <Row label="Customer Name" value={booking.customerName} />
-          <Row label="Mobile" value={booking.mobileNumber} />
-          <Row label="Pickup Point" value={booking.pickupPoint} />
-          <Row label="Drop Point" value={booking.dropPoint} />
-          <Row label="Pickup Date" value={booking.date} />
-          <Row label="Pickup Time" value={booking.pickupTime} />
-          <Row label="Trip Type" value={booking.tripType} />
-          <Row label="No. of Persons" value={booking.persons} />
-          <Row label="No. of Bags" value={booking.bags} />
+        <div style={styles.headerRight}>
+          <button style={styles.utilBtn} onClick={openMaps}><MapPin size={16} /> Google Maps</button>
+          <button style={styles.utilBtn} onClick={callCustomer}><Phone size={16} /> Call</button>
+          <button style={styles.utilBtn} onClick={whatsappCustomer}><MessageCircle size={16} /> WhatsApp</button>
         </div>
       </div>
 
-      <div style={styles.actionsBox}>
-        {booking.tripStatus === 'assigned' && (
-          <div style={styles.actionRow}>
-            <button style={{...styles.actionBtn, background: '#16a34a'}} onClick={() => handleStatusChange('accepted')}>
-              <CheckCircle size={18} /> Accept
-            </button>
-            <button style={{...styles.actionBtn, background: '#ef4444'}} onClick={() => handleStatusChange('rejected')}>
-              <XCircle size={18} /> Reject
-            </button>
-          </div>
-        )}
-
-        {booking.tripStatus === 'accepted' && (
-          <button style={{...styles.actionBtn, background: '#3b82f6', width: '100%'}} onClick={() => handleStatusChange('started')}>
-            <Play size={18} /> Start Trip
-          </button>
-        )}
-
-        {booking.tripStatus === 'started' && (
-          <div>
-            <div style={{...styles.sectionHeader, borderBottom: 'none', marginBottom: '0.5rem'}}>
-              <span style={styles.sectionTitle}>Trip Expenses (Rs)</span>
+      <div style={styles.grid}>
+        <div style={styles.mainCol}>
+          <div style={styles.card}>
+            <div style={styles.cardHeader}>
+              <Info size={18} color="var(--primary)" />
+              <h3 style={styles.cardTitle}>Trip Information</h3>
             </div>
-            <div style={styles.expenseForm}>
-              <div style={styles.inputGroup}>
-                <label style={styles.expenseLabel}>Toll Tax</label>
-                <input
-                  type="number"
-                  style={styles.expenseInput}
-                  value={expenses.tollTax}
-                  onChange={e => handleExpenseChange('tollTax', e.target.value)}
-                />
+            <div style={styles.cardBody}>
+              <div style={styles.infoGrid}>
+                <InfoItem label="Customer" value={booking.customerName} />
+                <InfoItem label="Contact" value={booking.mobileNumber} />
+                <InfoItem label="Date" value={booking.date} />
+                <InfoItem label="Time" value={booking.pickupTime} />
+                <InfoItem label="Trip Type" value={booking.tripType} />
+                <InfoItem label="Persons" value={booking.persons} />
+                <InfoItem label="Bags" value={booking.bags} />
+                {booking.tripMode === 'OUTSOURCED' ? (
+                  <>
+                    <InfoItem label="Collect from Customer" value={`₹${booking.customerFare?.totalAmount || 0}`} />
+                    <InfoItem label="Payout per KM" value={`₹${booking.driverPayout?.perKm || 0}`} />
+                    <InfoItem label="Total Payout" value={`₹${booking.driverPayout?.totalAmount || 0}`} />
+                  </>
+                ) : (
+                  <InfoItem label="Total Fare" value={`₹${booking.finalAmount || 0}`} />
+                )}
               </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.expenseLabel}>State Border Tax</label>
-                <input
-                  type="number"
-                  style={styles.expenseInput}
-                  value={expenses.stateBorderTax}
-                  onChange={e => handleExpenseChange('stateBorderTax', e.target.value)}
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.expenseLabel}>Parking Charges</label>
-                <input
-                  type="number"
-                  style={styles.expenseInput}
-                  value={expenses.parkingCharges}
-                  onChange={e => handleExpenseChange('parkingCharges', e.target.value)}
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.expenseLabel}>Fuel Cost</label>
-                <input
-                  type="number"
-                  style={styles.expenseInput}
-                  value={expenses.fuelCost}
-                  onChange={e => handleExpenseChange('fuelCost', e.target.value)}
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.expenseLabel}>Food Expenses</label>
-                <input
-                  type="number"
-                  style={styles.expenseInput}
-                  value={expenses.foodExpenses}
-                  onChange={e => handleExpenseChange('foodExpenses', e.target.value)}
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.expenseLabel}>Night Stay Expenses</label>
-                <input
-                  type="number"
-                  style={styles.expenseInput}
-                  value={expenses.nightStayExpenses}
-                  onChange={e => handleExpenseChange('nightStayExpenses', e.target.value)}
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.expenseLabel}>Repairing / Maintenance</label>
-                <input
-                  type="number"
-                  style={styles.expenseInput}
-                  value={expenses.repairingCost}
-                  onChange={e => handleExpenseChange('repairingCost', e.target.value)}
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.expenseLabel}>Additional Kilometers</label>
-                <input
-                  type="number"
-                  style={styles.expenseInput}
-                  value={expenses.additionalKilometers}
-                  onChange={e => handleExpenseChange('additionalKilometers', e.target.value)}
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.expenseLabel}>Rate per Km (Rs)</label>
-                <input
-                  type="number"
-                  style={styles.expenseInput}
-                  value={expenses.ratePerKm}
-                  onChange={e => handleExpenseChange('ratePerKm', e.target.value)}
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.expenseLabel}>Additional Km Cost (Rs)</label>
-                <div style={{...styles.expenseInput, background: '#f8fafc', color: '#64748b', display: 'flex', alignItems: 'center'}}>
-                  {Number(expenses.additionalKilometers || 0) * Number(expenses.ratePerKm || 0)}
+              <div style={styles.locationSection}>
+                <div style={styles.locationItem}>
+                  <div style={styles.locIcon}><CircleIcon color="var(--primary)" /></div>
+                  <div>
+                    <div style={styles.locLabel}>Pickup Location</div>
+                    <div style={styles.locValue}>{booking.pickupPoint}</div>
+                  </div>
+                </div>
+                <div style={styles.locDivider} />
+                <div style={styles.locationItem}>
+                  <div style={styles.locIcon}><CircleIcon color="var(--success)" /></div>
+                  <div>
+                    <div style={styles.locLabel}>Drop Location</div>
+                    <div style={styles.locValue}>{booking.dropPoint}</div>
+                  </div>
                 </div>
               </div>
             </div>
-            <button
-              style={{...styles.actionBtn, background: '#8b5cf6', width: '100%', marginTop: '1rem'}}
-              onClick={handleSubmitTrip}
-              disabled={submitting}
-            >
-              <Flag size={18} /> {submitting ? 'Submitting...' : 'Submit & Complete Trip'}
-            </button>
           </div>
-        )}
 
-        {booking.tripStatus === 'completed' && (
-          <div style={styles.completedBadge}>
-            <CheckCircle size={20} /> Trip Completed
+          <div style={styles.card}>
+            <div style={styles.cardHeader}>
+              <Play size={18} color="var(--primary)" />
+              <h3 style={styles.cardTitle}>Trip Actions</h3>
+            </div>
+            <div style={styles.cardBody}>
+              {booking.tripStatus === 'assigned' && (
+                <div style={styles.actionRow}>
+                  <button style={{...styles.actionBtn, backgroundColor: 'var(--success)'}} onClick={() => handleStatusChange('accepted')}>
+                    <CheckCircle size={18} /> Accept Assignment
+                  </button>
+                  <button style={{...styles.actionBtn, backgroundColor: 'var(--danger)'}} onClick={() => handleStatusChange('rejected')}>
+                    <XCircle size={18} /> Reject
+                  </button>
+                </div>
+              )}
+
+              {booking.tripStatus === 'accepted' && (
+                <button style={{...styles.actionBtn, backgroundColor: 'var(--primary)', width: '100%'}} onClick={() => handleStatusChange('started')}>
+                  <Play size={18} /> Start Trip Now
+                </button>
+              )}
+
+              {booking.tripStatus === 'started' && (
+                <div style={styles.startedStatus}>
+                  <div style={styles.statusBanner}>
+                    <Play size={20} /> Trip is in Progress
+                  </div>
+                  <p style={styles.statusHint}>Fill in the expenses below and complete the trip once you reach the destination.</p>
+                </div>
+              )}
+
+              {booking.tripStatus === 'completed' && (
+                <div style={styles.completedBanner}>
+                  <CheckCircle size={24} /> Trip Completed Successfully
+                </div>
+              )}
+            </div>
           </div>
-        )}
+        </div>
+
+        <div style={styles.sideCol}>
+          {booking.tripStatus === 'started' && (
+            <div style={styles.card}>
+              <div style={styles.cardHeader}>
+                <Wallet size={18} color="var(--primary)" />
+                <h3 style={styles.cardTitle}>Trip Expenses</h3>
+              </div>
+              <div style={styles.cardBody}>
+                <div style={styles.expenseList}>
+                  <ExpenseInput label="Toll Tax" value={expenses.tollTax} onChange={v => handleExpenseChange('tollTax', v)} />
+                  <ExpenseInput label="State Border Tax" value={expenses.stateBorderTax} onChange={v => handleExpenseChange('stateBorderTax', v)} />
+                  <ExpenseInput label="Parking Charges" value={expenses.parkingCharges} onChange={v => handleExpenseChange('parkingCharges', v)} />
+                  <ExpenseInput label="Fuel Cost" value={expenses.fuelCost} onChange={v => handleExpenseChange('fuelCost', v)} />
+                  <ExpenseInput label="Food" value={expenses.foodExpenses} onChange={v => handleExpenseChange('foodExpenses', v)} />
+                  <ExpenseInput label="Night Stay" value={expenses.nightStayExpenses} onChange={v => handleExpenseChange('nightStayExpenses', v)} />
+                  <ExpenseInput label="Repairs" value={expenses.repairingCost} onChange={v => handleExpenseChange('repairingCost', v)} />
+                  <ExpenseInput label="Extra Km" value={expenses.additionalKilometers} onChange={v => handleExpenseChange('additionalKilometers', v)} />
+                </div>
+                
+                <div style={styles.totalBox}>
+                  <div style={styles.totalRow}>
+                    <span>Extra Km Cost</span>
+                    <span>₹{Number(expenses.additionalKilometers || 0) * Number(expenses.ratePerKm || 0)}</span>
+                  </div>
+                </div>
+
+                <button
+                  className="primary-login-button"
+                  style={{ marginTop: '1.5rem', marginBottom: 0 }}
+                  onClick={handleSubmitTrip}
+                  disabled={submitting}
+                >
+                  <Flag size={18} /> {submitting ? 'Submitting...' : 'Complete & Submit'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-function Row({ label, value, highlight }) {
-  if (!value) return null
+function InfoItem({ label, value }) {
+  if (!value) return null;
   return (
-    <div style={styles.row}>
-      <span style={styles.label}>{label}</span>
-      <span style={{...styles.value, ...(highlight ? { color: '#16a34a', fontWeight: '700', fontSize: '1.1rem' } : {})}}>{value}</span>
+    <div style={styles.infoItem}>
+      <div style={styles.infoLabel}>{label}</div>
+      <div style={styles.infoValue}>{value}</div>
     </div>
-  )
+  );
+}
+
+function CircleIcon({ color }) {
+  return <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: color }} />;
+}
+
+function ExpenseInput({ label, value, onChange }) {
+  return (
+    <div style={styles.expenseItem}>
+      <label style={styles.expenseLabel}>{label}</label>
+      <div style={styles.expenseInputWrap}>
+        <span style={styles.currency}>₹</span>
+        <input
+          type="number"
+          style={styles.expenseInput}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+        />
+      </div>
+    </div>
+  );
 }
 
 const styles = {
-  page: { maxWidth: '820px', margin: '0 auto', padding: '1.5rem', fontFamily: 'sans-serif' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' },
-  title: { fontSize: '1.5rem', fontWeight: '700', margin: 0 },
-  back: {
-    display: 'flex', alignItems: 'center', gap: '6px',
-    background: '#2563eb', border: 'none', borderRadius: '8px',
-    padding: '0.6rem 1rem', fontSize: '0.9rem', fontWeight: '600',
-    color: '#fff', cursor: 'pointer',
-  },
-  utilityRow: { display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' },
-  utilBtn: {
-    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-    background: '#fff', border: '1px solid #dbe2f1', padding: '0.75rem',
-    borderRadius: '10px', fontWeight: '600', color: '#334155', cursor: 'pointer',
-    minWidth: '120px'
-  },
-  card: { background: '#fff', borderRadius: '12px', padding: '1.25rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginBottom: '1.5rem' },
-  sectionHeader: { marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid #f1f5f9' },
-  sectionTitle: { fontWeight: '700', color: '#2563eb', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' },
-  section: { display: 'flex', flexDirection: 'column' },
-  row: { display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: '1px solid #f1f5f9' },
-  label: { color: '#64748b', fontSize: '0.9rem', fontWeight: '600' },
-  value: { fontWeight: '500', fontSize: '0.96rem', textAlign: 'right' },
-  actionsBox: { background: '#fff', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
+  container: { display: 'flex', flexDirection: 'column', gap: '1.5rem' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  backBtn: { display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: 'var(--text-secondary)', fontWeight: '600', cursor: 'pointer', fontSize: '0.95rem' },
+  headerRight: { display: 'flex', gap: '0.75rem' },
+  utilBtn: { display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#fff', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.6rem 1rem', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', cursor: 'pointer' },
+  grid: { display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem' },
+  mainCol: { display: 'flex', flexDirection: 'column', gap: '1.5rem' },
+  sideCol: { display: 'flex', flexDirection: 'column', gap: '1.5rem' },
+  card: { backgroundColor: '#fff', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-light)', overflow: 'hidden' },
+  cardHeader: { padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: '0.75rem' },
+  cardTitle: { margin: 0, fontSize: '1rem', fontWeight: '700', color: 'var(--text-primary)' },
+  cardBody: { padding: '1.5rem' },
+  infoGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1.5rem', marginBottom: '2rem' },
+  infoItem: { display: 'flex', flexDirection: 'column', gap: '4px' },
+  infoLabel: { fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: '600', textTransform: 'uppercase' },
+  infoValue: { fontSize: '0.95rem', color: 'var(--text-primary)', fontWeight: '700' },
+  locationSection: { backgroundColor: 'var(--bg-page)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' },
+  locationItem: { display: 'flex', gap: '1rem' },
+  locIcon: { marginTop: '4px' },
+  locLabel: { fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: '600' },
+  locValue: { fontSize: '1rem', color: 'var(--text-primary)', fontWeight: '700' },
+  locDivider: { position: 'absolute', left: '1.8rem', top: '2.8rem', bottom: '2.8rem', width: '1px', borderLeft: '2px dashed var(--border)' },
   actionRow: { display: 'flex', gap: '1rem' },
-  actionBtn: {
-    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-    color: '#fff', border: 'none', borderRadius: '10px', padding: '1rem',
-    fontWeight: '700', fontSize: '1rem', cursor: 'pointer',
-  },
-  completedBadge: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-    background: '#dcfce7', color: '#16a34a', padding: '1rem', borderRadius: '10px',
-    fontWeight: '700', fontSize: '1.1rem'
-  },
-  expenseForm: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '1rem',
-  },
-  inputGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.4rem',
-  },
-  expenseLabel: {
-    fontSize: '0.8rem',
-    fontWeight: '600',
-    color: '#64748b',
-  },
-  expenseInput: {
-    padding: '0.6rem',
-    borderRadius: '8px',
-    border: '1px solid #dbe2f1',
-    fontSize: '0.95rem',
-    width: '100%',
-  }
+  actionBtn: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#fff', border: 'none', borderRadius: '12px', padding: '1rem', fontWeight: '700', cursor: 'pointer' },
+  startedStatus: { textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '1rem' },
+  statusBanner: { backgroundColor: 'var(--primary-subtle)', color: 'var(--primary)', padding: '1rem', borderRadius: '12px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' },
+  statusHint: { fontSize: '0.85rem', color: 'var(--text-tertiary)', margin: 0 },
+  completedBanner: { backgroundColor: 'var(--success-subtle)', color: 'var(--success)', padding: '2rem', borderRadius: '12px', fontWeight: '700', fontSize: '1.1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' },
+  expenseList: { display: 'flex', flexDirection: 'column', gap: '1rem' },
+  expenseItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  expenseLabel: { fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)' },
+  expenseInputWrap: { position: 'relative', width: '100px' },
+  currency: { position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.85rem', color: 'var(--text-tertiary)' },
+  expenseInput: { width: '100%', padding: '0.5rem 0.5rem 0.5rem 1.5rem', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '0.9rem', textAlign: 'right' },
+  totalBox: { marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-light)' },
+  totalRow: { display: 'flex', justifyContent: 'space-between', fontWeight: '700', color: 'var(--text-primary)', fontSize: '0.95rem' },
 }

@@ -52,6 +52,10 @@ const EMPTY_BOOKING = {
   notes: '',
   assignedDriverId: null,
   tripStatus: 'unassigned',
+  tripMode: 'INHOUSE',
+  customerFare: { perKm: 0, totalKm: 0, totalAmount: 0 },
+  driverPayout: { perKm: 0, totalKm: 0, totalAmount: 0 },
+  margin: 0
 }
 
 function calculateFinalAmount(form) {
@@ -80,6 +84,7 @@ export default function CreateBooking() {
   const [drivers, setDrivers] = useState([])
   const [form, setForm] = useState(EMPTY_BOOKING)
   const [loading, setLoading] = useState(false)
+  const [useExternalDriver, setUseExternalDriver] = useState(false)
 
   useEffect(() => {
     return onSnapshot(collection(db, 'customers'), snapshot => {
@@ -178,6 +183,10 @@ export default function CreateBooking() {
         carColor: (form.carColor || '').trim(),
         carRegNo: (form.carRegNo || '').trim(),
         notes: (form.notes || '').trim(),
+        tripMode: useExternalDriver ? 'OUTSOURCED' : 'INHOUSE',
+        customerFare: form.customerFare,
+        driverPayout: form.driverPayout,
+        margin: form.margin,
         createdAt: serverTimestamp(),
       }
       const document = await addDoc(collection(db, 'bookings'), payload)
@@ -403,9 +412,22 @@ export default function CreateBooking() {
                 <div style={styles.row}>
                   <div style={styles.field}>
                     <label style={styles.label}>Select a Driver</label>
+                    <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input 
+                        type="checkbox" 
+                        id="externalDriver" 
+                        checked={useExternalDriver} 
+                        onChange={(e) => setUseExternalDriver(e.target.checked)} 
+                      />
+                      <label htmlFor="externalDriver" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                        Use External/Vendor Driver
+                      </label>
+                    </div>
                     <select style={styles.input} value={form.driverId} onChange={e => handleDriverSelect(e.target.value)}>
                       <option value="">Choose a driver</option>
-                      {drivers.map(d => <option key={d.id} value={d.id}>{d.name} ({d.mobile})</option>)}
+                      {drivers
+                        .filter(d => useExternalDriver ? d.driverType === 'ATTACHED_DRIVER' : true)
+                        .map(d => <option key={d.id} value={d.id}>{d.name} ({d.mobile})</option>)}
                     </select>
                   </div>
                 </div>
@@ -517,6 +539,84 @@ export default function CreateBooking() {
                         <input style={styles.input} type="number" value={form.driverAllowance} onChange={e => set('driverAllowance', e.target.value)} />
                       </div>
                     </div>
+
+                    {useExternalDriver && (
+                      <div style={{ marginTop: '20px', padding: '20px', background: 'var(--bg-page)', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                        <h4 style={{ margin: '0 0 16px 0', fontSize: '0.9375rem', fontWeight: 800 }}>Vendor Pricing (Outsourced)</h4>
+                        <div style={{ ...styles.row, marginBottom: '16px' }}>
+                          <div style={styles.field}>
+                            <label style={styles.label}>Total Kilometers</label>
+                            <input 
+                              style={styles.input} 
+                              type="number" 
+                              value={form.numberOfKilometers} 
+                              onChange={e => {
+                                const totalKm = parseFloat(e.target.value) || 0
+                                const custTotal = form.customerFare.perKm * totalKm
+                                const drivTotal = form.driverPayout.perKm * totalKm
+                                setForm(c => ({
+                                  ...c,
+                                  numberOfKilometers: e.target.value,
+                                  customerFare: { ...c.customerFare, totalKm, totalAmount: custTotal },
+                                  driverPayout: { ...c.driverPayout, totalKm, totalAmount: drivTotal },
+                                  margin: custTotal - drivTotal
+                                }))
+                              }} 
+                            />
+                          </div>
+                        </div>
+                        <div style={styles.row}>
+                          <div style={styles.field}>
+                            <label style={styles.label}>Customer Rate per KM</label>
+                            <input 
+                              style={styles.input} 
+                              type="number" 
+                              value={form.customerFare.perKm} 
+                              onChange={e => {
+                                const perKm = parseFloat(e.target.value) || 0
+                                const totalKm = parseFloat(form.numberOfKilometers) || 0
+                                const totalAmount = perKm * totalKm
+                                const margin = totalAmount - form.driverPayout.totalAmount
+                                setForm(c => ({
+                                  ...c,
+                                  customerFare: { ...c.customerFare, perKm, totalKm, totalAmount },
+                                  margin
+                                }))
+                              }} 
+                            />
+                          </div>
+                          <div style={styles.field}>
+                            <label style={styles.label}>Driver Payout per KM</label>
+                            <input 
+                              style={styles.input} 
+                              type="number" 
+                              value={form.driverPayout.perKm} 
+                              onChange={e => {
+                                const perKm = parseFloat(e.target.value) || 0
+                                const totalKm = parseFloat(form.numberOfKilometers) || 0
+                                const totalAmount = perKm * totalKm
+                                const margin = form.customerFare.totalAmount - totalAmount
+                                setForm(c => ({
+                                  ...c,
+                                  driverPayout: { ...c.driverPayout, perKm, totalKm, totalAmount },
+                                  margin
+                                }))
+                              }} 
+                            />
+                          </div>
+                        </div>
+                        <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                          <div style={{ padding: '12px', background: 'white', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 600 }}>MARGIN PER KM</div>
+                            <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--primary)' }}>₹{(form.customerFare.perKm - form.driverPayout.perKm).toFixed(2)}</div>
+                          </div>
+                          <div style={{ padding: '12px', background: 'white', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 600 }}>TOTAL MARGIN</div>
+                            <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--success)' }}>₹{form.margin.toLocaleString()}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div style={styles.row}>

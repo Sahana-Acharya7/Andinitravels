@@ -1,23 +1,28 @@
 import { useEffect, useState } from 'react'
 import { collection, onSnapshot, query, where } from 'firebase/firestore'
-import { signOut } from 'firebase/auth'
-import { Car, ChevronRight, LogOut, MapPin, Flag, Calendar, Clock, CheckCircle, Play, ThumbsUp } from 'lucide-react'
-import { db, auth } from '../../firebase'
+import { 
+  Calendar, 
+  Clock, 
+  CheckCircle, 
+  Play, 
+  Star, 
+  MapPin, 
+  Circle,
+  ArrowRight
+} from 'lucide-react'
+import { db } from '../../firebase'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import DriverBottomNav from '../../components/DriverBottomNav'
 
-// Driver sees tripStatus, NOT admin booking status
 const TRIP_STATUS_CONFIG = {
-  assigned:  { label: 'Assigned',     bg: '#dbeafe', color: '#2563eb', icon: <Calendar size={13} />, tab: 'Upcoming' },
-  accepted:  { label: 'Accepted',     bg: '#e0f2fe', color: '#0284c7', icon: <ThumbsUp size={13} />, tab: 'Upcoming' },
+  assigned:  { label: 'Assigned',     bg: 'var(--primary-subtle)', color: 'var(--primary)', icon: <Calendar size={13} />, tab: 'Upcoming' },
+  accepted:  { label: 'Accepted',     bg: '#e0f2fe', color: '#0284c7', icon: <Play size={13} />, tab: 'Upcoming' },
   started:   { label: 'Trip Started', bg: '#ede9fe', color: '#8b5cf6', icon: <Play size={13} />,     tab: 'Ongoing' },
-  completed: { label: 'Completed',    bg: '#dcfce7', color: '#16a34a', icon: <CheckCircle size={13} />, tab: 'Past' },
+  completed: { label: 'Completed',    bg: 'var(--success-subtle)', color: 'var(--success)', icon: <CheckCircle size={13} />, tab: 'Past' },
 }
 
 export default function DriverDashboard() {
   const [bookings, setBookings] = useState([])
-  const [filter, setFilter] = useState('Upcoming')
   const navigate = useNavigate()
   const { user } = useAuth()
 
@@ -40,254 +45,452 @@ export default function DriverDashboard() {
     })
   }, [user])
 
-  // Filter by tripStatus
   const getTab = (b) => (TRIP_STATUS_CONFIG[b.tripStatus] || TRIP_STATUS_CONFIG.assigned).tab
-  const filteredBookings = bookings.filter(b => getTab(b) === filter)
+  
+  const upcomingTrips = bookings.filter(b => getTab(b) === 'Upcoming')
+  const ongoingTrips = bookings.filter(b => getTab(b) === 'Ongoing')
+  const pastTrips = bookings.filter(b => getTab(b) === 'Past')
 
-  const counts = {
-    Upcoming: bookings.filter(b => getTab(b) === 'Upcoming').length,
-    Ongoing: bookings.filter(b => getTab(b) === 'Ongoing').length,
-    Past: bookings.filter(b => getTab(b) === 'Past').length,
-  }
+  const latestNewAssignment = upcomingTrips[0]
 
   return (
-    <div style={{...styles.page, paddingBottom: '80px'}}>
-      <div style={styles.header}>
-        <div style={styles.brand}>
-          <div style={styles.brandIcon}>
-            <Car size={20} color="#16a34a" />
+    <div className="dashboard-container" style={styles.container}>
+      {/* Stats Grid */}
+      <div style={styles.statsGrid}>
+        <div className="card-hover" style={styles.statCard}>
+          <div style={{...styles.statIconContainer, backgroundColor: 'var(--primary-subtle)'}}>
+            <Calendar size={24} color="var(--primary)" />
           </div>
-          <div>
-            <div style={styles.logo}>Andini Travels</div>
-            <div style={styles.logoSub}>Driver Portal</div>
-          </div>
+          <div style={styles.statValue}>{upcomingTrips.length}</div>
+          <div style={styles.statLabel}>Upcoming</div>
         </div>
-
-        <div style={styles.headerButtons}>
-          <button style={styles.ghostButton} onClick={() => signOut(auth)}>
-            <LogOut size={16} /> Sign Out
-          </button>
+        <div className="card-hover" style={styles.statCard}>
+          <div style={{...styles.statIconContainer, backgroundColor: '#f5f3ff'}}>
+            <Play size={24} color="#8b5cf6" />
+          </div>
+          <div style={styles.statValue}>{ongoingTrips.length}</div>
+          <div style={styles.statLabel}>Ongoing</div>
+        </div>
+        <div className="card-hover" style={{...styles.statCard, borderBottom: '4px solid var(--success)'}}>
+          <div style={{...styles.statIconContainer, backgroundColor: 'var(--success-subtle)'}}>
+            <CheckCircle size={24} color="var(--success)" />
+          </div>
+          <div style={styles.statValue}>{pastTrips.length}</div>
+          <div style={styles.statLabel}>Past</div>
         </div>
       </div>
 
-      <div style={styles.statGrid}>
-        {[
-          { label: 'Upcoming', key: 'Upcoming', icon: <Calendar size={22} color="#2563eb" />, color: '#2563eb' },
-          { label: 'Ongoing', key: 'Ongoing', icon: <Play size={22} color="#8b5cf6" />, color: '#8b5cf6' },
-          { label: 'Past', key: 'Past', icon: <CheckCircle size={22} color="#16a34a" />, color: '#16a34a' },
-        ].map(({ label, key, icon, color }) => (
-          <div
-            key={key}
-            style={{
-              ...styles.statCard,
-              borderBottom: filter === key ? `3px solid ${color}` : '3px solid transparent',
-            }}
-            onClick={() => setFilter(key)}
-          >
-            <div style={styles.statIcon}>{icon}</div>
-            <div style={{ ...styles.statNum, color }}>{counts[key]}</div>
-            <div style={styles.statLabel}>{label}</div>
-          </div>
-        ))}
-      </div>
-
-      <div style={styles.filterRow}>
-        {['Upcoming', 'Ongoing', 'Past'].map(status => (
-          <button
-            key={status}
-            style={{
-              ...styles.pill,
-              background: filter === status ? '#1a1a2e' : '#fff',
-              color: filter === status ? '#fff' : '#555',
-            }}
-            onClick={() => setFilter(status)}
-          >
-            {status}
-          </button>
-        ))}
-        <span style={styles.count}>{filteredBookings.length} trips</span>
-      </div>
-
-      <div style={styles.list}>
-        {filteredBookings.length === 0 && (
-          <div style={styles.empty}>
-            <Car size={48} color="#e0e0e0" style={{ marginBottom: '1rem' }} />
-            <div style={{ fontWeight: '600', color: '#555' }}>No {filter.toLowerCase()} trips</div>
-            <div style={{ color: '#aaa', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-              Check back later for updates.
+      {/* New Assignment Section */}
+      {latestNewAssignment && (
+        <div style={styles.assignmentSection}>
+          <div style={styles.assignmentBanner}>
+            <div style={styles.assignmentBannerLabel}>
+              <Play size={14} fill="#fff" /> NEW ASSIGNMENT
             </div>
           </div>
+          <div style={styles.assignmentCard}>
+            <div style={styles.assignmentMain}>
+              <div style={styles.userInfo}>
+                <div style={styles.avatar}>
+                  {latestNewAssignment.customerName?.[0]?.toUpperCase() || 'U'}
+                </div>
+                <div>
+                  <div style={styles.userName}>{latestNewAssignment.customerName}</div>
+                  <div style={styles.userMeta}>
+                    <span style={styles.rating}><Star size={12} fill="var(--warning)" color="var(--warning)" /> 4.9</span>
+                    <span style={styles.userType}>Corporate Premium</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={styles.routeContainer}>
+                <div style={styles.routePoint}>
+                  <Circle size={8} color="var(--primary)" fill="var(--primary)" />
+                  <span style={styles.routeText}>{latestNewAssignment.pickupPoint}</span>
+                </div>
+                <div style={styles.routeLine} />
+                <div style={styles.routePoint}>
+                  <Circle size={8} color="var(--success)" fill="var(--success)" />
+                  <span style={styles.routeText}>{latestNewAssignment.dropPoint}</span>
+                </div>
+              </div>
+
+              <div style={styles.dateTimeContainer}>
+                <div style={styles.dateTimeItem}>
+                  <Calendar size={16} color="var(--text-tertiary)" />
+                  <span>{latestNewAssignment.date}</span>
+                </div>
+                <div style={styles.dateTimeItem}>
+                  <Clock size={16} color="var(--text-tertiary)" />
+                  <span>{latestNewAssignment.pickupTime}</span>
+                </div>
+              </div>
+
+              <button 
+                className="btn-new-booking"
+                style={styles.detailsBtn}
+                onClick={() => navigate(`/driver/booking/${latestNewAssignment.id}`)}
+              >
+                See Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ongoing Trips Section */}
+      {ongoingTrips.length > 0 && (
+        <>
+          <div style={styles.sectionHeader}>
+            <div>
+              <h2 style={styles.sectionTitle}>Ongoing Trips</h2>
+              <p style={styles.sectionSub}>Trips currently in progress</p>
+            </div>
+          </div>
+          <div style={styles.tripsList}>
+            {ongoingTrips.map(trip => (
+              <div key={trip.id} className="card-hover" style={{...styles.tripCard, borderLeft: '4px solid #8b5cf6'}} onClick={() => navigate(`/driver/booking/${trip.id}`)}>
+                <div style={styles.tripInitialAvatar}>
+                  {trip.customerName?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                </div>
+                <div style={styles.tripInfo}>
+                  <div style={styles.tripName}>{trip.customerName}</div>
+                  <div style={styles.tripTime}>{trip.date} • {trip.pickupTime}</div>
+                </div>
+                <div style={styles.tripRoute}>
+                  <div style={styles.routeMin}>
+                    <Circle size={6} color="var(--primary)" fill="var(--primary)" />
+                    <span>{trip.pickupPoint}</span>
+                    <ArrowRight size={14} color="var(--text-tertiary)" />
+                    <Circle size={6} color="var(--success)" fill="var(--success)" />
+                    <span>{trip.dropPoint}</span>
+                  </div>
+                </div>
+                <div style={styles.tripStatus}>
+                  <div style={{...styles.statusBadge, backgroundColor: '#f5f3ff', color: '#8b5cf6'}}>
+                    <Play size={12} fill="#8b5cf6" />
+                    <span>In Progress</span>
+                  </div>
+                </div>
+                <div style={styles.tripAmount}>
+                  ₹{trip.tripMode === 'OUTSOURCED' ? trip.customerFare?.totalAmount : (trip.finalAmount || '0.00')}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Recent Past Trips */}
+      <div style={styles.sectionHeader}>
+        <div>
+          <h2 style={styles.sectionTitle}>Recent Past Trips</h2>
+          <p style={styles.sectionSub}>Your completed assignments</p>
+        </div>
+        <button style={styles.viewAllBtn}>View All</button>
+      </div>
+
+      <div style={styles.tripsList}>
+        {pastTrips.length > 0 ? pastTrips.slice(0, 5).map(trip => (
+          <div key={trip.id} className="card-hover" style={styles.tripCard} onClick={() => navigate(`/driver/booking/${trip.id}`)}>
+            <div style={styles.tripInitialAvatar}>
+              {trip.customerName?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+            </div>
+            <div style={styles.tripInfo}>
+              <div style={styles.tripName}>{trip.customerName}</div>
+              <div style={styles.tripTime}>{trip.date} • {trip.pickupTime}</div>
+            </div>
+            <div style={styles.tripRoute}>
+              <div style={styles.routeMin}>
+                <Circle size={6} color="var(--primary)" fill="var(--primary)" />
+                <span>{trip.pickupPoint}</span>
+                <ArrowRight size={14} color="var(--text-tertiary)" />
+                <Circle size={6} color="var(--success)" fill="var(--success)" />
+                <span>{trip.dropPoint}</span>
+              </div>
+            </div>
+            <div style={styles.tripStatus}>
+              <div style={styles.statusBadge}>
+                <CheckCircle size={12} color="var(--success)" />
+                <span>Completed</span>
+              </div>
+            </div>
+            <div style={styles.tripAmount}>
+              ₹{trip.tripMode === 'OUTSOURCED' ? (trip.customerFare?.totalAmount || '0.00') : (trip.finalAmount || '0.00')}
+            </div>
+          </div>
+        )) : (
+          <div style={styles.emptyState}>No past trips found.</div>
         )}
-
-        {filteredBookings.map(booking => {
-          const config = TRIP_STATUS_CONFIG[booking.tripStatus] || TRIP_STATUS_CONFIG.assigned
-
-          return (
-            <div
-              key={booking.id}
-              style={styles.card}
-              onClick={() => navigate(`/driver/booking/${booking.id}`)}
-            >
-              <div style={styles.cardAvatar}>
-                {booking.customerName?.[0]?.toUpperCase() || '?'}
-              </div>
-              <div style={styles.cardBody}>
-                <div style={styles.cardTop}>
-                  <div style={styles.cardName}>{booking.customerName}</div>
-                  <span
-                    style={{
-                      ...styles.badge,
-                      background: config.bg,
-                      color: config.color,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}
-                  >
-                    {config.icon} {config.label}
-                  </span>
-                </div>
-                <div style={styles.cardRoute}>
-                  <MapPin size={13} color="#2563eb" />
-                  <span>{booking.pickupPoint}</span>
-                  <span style={{ color: '#cbd5e1' }}>to</span>
-                  <Flag size={13} color="#16a34a" />
-                  <span>{booking.dropPoint}</span>
-                </div>
-                <div style={styles.cardMeta}>
-                  <span style={styles.metaItem}>
-                    <Calendar size={13} /> {booking.date || 'No date'}
-                  </span>
-                  <span style={styles.metaItem}>
-                    <Clock size={13} /> {booking.pickupTime || 'No time'}
-                  </span>
-                </div>
-              </div>
-              <ChevronRight size={20} color="#cbd5e1" />
-            </div>
-          )
-        })}
       </div>
-      <DriverBottomNav />
     </div>
   )
 }
 
 const styles = {
-  page: { maxWidth: '980px', margin: '0 auto', padding: '1.25rem', fontFamily: 'sans-serif' },
-  header: {
+  container: {
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    background: '#fff',
-    borderRadius: '16px',
-    padding: '1rem 1.5rem',
-    marginBottom: '1.25rem',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-    flexWrap: 'wrap',
-    gap: '1rem',
+    flexDirection: 'column',
+    gap: '2rem',
   },
-  brand: { display: 'flex', alignItems: 'center', gap: '0.75rem' },
-  brandIcon: {
-    width: '40px',
-    height: '40px',
-    background: '#dcfce7',
-    borderRadius: '10px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+  statsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+    gap: '1.5rem',
   },
-  logo: { fontSize: '1.2rem', fontWeight: '700', color: '#1a1a2e' },
-  logoSub: { fontSize: '0.75rem', color: '#94a3b8' },
-  headerButtons: { display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' },
-  ghostButton: {
-    background: '#fff',
-    color: '#555',
-    border: '1.5px solid #e0e0e0',
-    borderRadius: '10px',
-    padding: '0.6rem 1rem',
-    fontWeight: '600',
-    fontSize: '0.875rem',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    cursor: 'pointer',
-  },
-  statGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' },
   statCard: {
-    background: '#fff',
-    borderRadius: '14px',
-    padding: '1rem',
-    textAlign: 'center',
-    cursor: 'pointer',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-  },
-  statIcon: { display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' },
-  statNum: { fontSize: '1.8rem', fontWeight: '700' },
-  statLabel: { fontSize: '0.78rem', color: '#888', marginTop: '0.2rem' },
-  filterRow: { display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' },
-  pill: {
-    border: '1.5px solid #e0e0e0',
-    borderRadius: '99px',
-    padding: '0.4rem 1rem',
-    fontSize: '0.85rem',
-    fontWeight: '500',
-    cursor: 'pointer',
-  },
-  count: { marginLeft: 'auto', color: '#94a3b8', fontSize: '0.85rem' },
-  list: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
-  card: {
-    background: '#fff',
-    borderRadius: '14px',
-    padding: '1rem 1.25rem',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-  },
-  cardAvatar: {
-    width: '44px',
-    height: '44px',
-    borderRadius: '50%',
-    background: '#dcfce7',
-    color: '#16a34a',
-    fontWeight: '700',
-    fontSize: '1.1rem',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  cardBody: { flex: 1, minWidth: 0 },
-  cardTop: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '0.4rem',
-    gap: '0.75rem',
-    flexWrap: 'wrap',
-  },
-  cardName: { fontWeight: '600', fontSize: '1rem' },
-  badge: { padding: '0.25rem 0.7rem', borderRadius: '99px', fontSize: '0.78rem', fontWeight: '600' },
-  cardRoute: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.4rem',
-    fontSize: '0.85rem',
-    color: '#555',
-    marginBottom: '0.5rem',
-    flexWrap: 'wrap',
-  },
-  cardMeta: { display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#888', flexWrap: 'wrap' },
-  metaItem: { display: 'flex', alignItems: 'center', gap: '4px' },
-  empty: {
-    textAlign: 'center',
-    padding: '4rem 2rem',
-    background: '#fff',
-    borderRadius: '14px',
+    backgroundColor: 'var(--bg-card)',
+    borderRadius: 'var(--radius-xl)',
+    padding: '2rem',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
+    boxShadow: 'var(--shadow-sm)',
+    border: '1px solid var(--border-light)',
+    cursor: 'pointer',
   },
+  statIconContainer: {
+    width: '48px',
+    height: '48px',
+    borderRadius: '12px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '1rem',
+  },
+  statValue: {
+    fontSize: '2.5rem',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+    lineHeight: 1,
+  },
+  statLabel: {
+    fontSize: '1rem',
+    color: 'var(--text-secondary)',
+    fontWeight: '500',
+    marginTop: '0.5rem',
+  },
+  assignmentSection: {
+    position: 'relative',
+  },
+  assignmentBanner: {
+    backgroundColor: 'var(--primary)',
+    borderTopLeftRadius: '12px',
+    borderTopRightRadius: '12px',
+    padding: '0.75rem 1.5rem',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  assignmentBannerLabel: {
+    color: '#fff',
+    fontSize: '0.75rem',
+    fontWeight: '700',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    letterSpacing: '0.05em',
+  },
+  assignmentCard: {
+    backgroundColor: 'var(--bg-card)',
+    borderBottomLeftRadius: 'var(--radius-xl)',
+    borderBottomRightRadius: 'var(--radius-xl)',
+    boxShadow: 'var(--shadow-lg)',
+    padding: '2rem',
+  },
+  assignmentMain: {
+    display: 'grid',
+    gridTemplateColumns: '1.2fr 1.2fr 1fr auto',
+    alignItems: 'center',
+    gap: '2rem',
+  },
+  userInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+  },
+  avatar: {
+    width: '60px',
+    height: '60px',
+    borderRadius: '50%',
+    backgroundColor: '#6366f1',
+    color: '#fff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '1.5rem',
+    fontWeight: '700',
+  },
+  userName: {
+    fontSize: '1.25rem',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+  },
+  userMeta: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    marginTop: '0.25rem',
+  },
+  rating: {
+    fontSize: '0.85rem',
+    fontWeight: '600',
+    color: 'var(--text-secondary)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.25rem',
+  },
+  userType: {
+    fontSize: '0.85rem',
+    color: 'var(--primary)',
+    fontWeight: '500',
+  },
+  routeContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.75rem',
+    position: 'relative',
+  },
+  routePoint: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+  },
+  routeText: {
+    fontSize: '0.95rem',
+    fontWeight: '600',
+    color: 'var(--text-primary)',
+  },
+  routeLine: {
+    position: 'absolute',
+    left: '3.5px',
+    top: '12px',
+    bottom: '12px',
+    width: '1px',
+    backgroundColor: 'var(--border)',
+  },
+  dateTimeContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+  },
+  dateTimeItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    fontSize: '0.9rem',
+    color: 'var(--text-secondary)',
+    fontWeight: '500',
+  },
+  detailsBtn: {
+    margin: 0,
+    width: 'auto',
+    padding: '0 2rem',
+  },
+  sectionHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  sectionTitle: {
+    fontSize: '1.5rem',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+    margin: 0,
+  },
+  sectionSub: {
+    fontSize: '0.9rem',
+    color: 'var(--text-tertiary)',
+    margin: '0.25rem 0 0 0',
+  },
+  viewAllBtn: {
+    background: 'none',
+    border: 'none',
+    color: 'var(--primary)',
+    fontWeight: '600',
+    fontSize: '0.95rem',
+    cursor: 'pointer',
+  },
+  tripsList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem',
+  },
+  tripCard: {
+    backgroundColor: 'var(--bg-card)',
+    borderRadius: '20px',
+    padding: '1.25rem 1.5rem',
+    display: 'grid',
+    gridTemplateColumns: 'auto 200px 1.5fr 1fr auto',
+    alignItems: 'center',
+    gap: '1.5rem',
+    boxShadow: 'var(--shadow-sm)',
+    border: '1px solid var(--border-light)',
+    cursor: 'pointer',
+  },
+  tripInitialAvatar: {
+    width: '48px',
+    height: '48px',
+    borderRadius: '50%',
+    backgroundColor: 'var(--border-light)',
+    color: 'var(--text-secondary)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: '700',
+    fontSize: '0.9rem',
+  },
+  tripInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  tripName: {
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+    fontSize: '1rem',
+  },
+  tripTime: {
+    fontSize: '0.8rem',
+    color: 'var(--text-tertiary)',
+    marginTop: '0.2rem',
+  },
+  tripRoute: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  routeMin: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    fontSize: '0.9rem',
+    color: 'var(--text-secondary)',
+    fontWeight: '500',
+  },
+  tripStatus: {
+    display: 'flex',
+    justifyContent: 'center',
+  },
+  statusBadge: {
+    backgroundColor: 'var(--success-subtle)',
+    color: 'var(--success)',
+    padding: '0.4rem 0.75rem',
+    borderRadius: '8px',
+    fontSize: '0.8rem',
+    fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.4rem',
+  },
+  tripAmount: {
+    fontSize: '1.25rem',
+    fontWeight: '800',
+    color: 'var(--success)',
+  },
+  emptyState: {
+    padding: '3rem',
+    textAlign: 'center',
+    backgroundColor: 'var(--bg-card)',
+    borderRadius: 'var(--radius-xl)',
+    color: 'var(--text-tertiary)',
+    border: '1px dashed var(--border)',
+  }
 }
