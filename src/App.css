@@ -1,7 +1,7 @@
-/* Modern UI Components for Andini Travels */
-
+:root {
   --transition-normal: 250ms ease;
 }
+
 
 [data-theme='dark'] {
   --bg-page: #020617;
@@ -313,8 +313,8 @@
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
-.mobile-hide {
-  @media (max-width: 640px) { display: none; }
+@media (max-width: 640px) {
+  .mobile-hide { display: none; }
 }
 
 /* Typography Utilities */
